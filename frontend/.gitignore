@@ -1,0 +1,5 @@
+node_modules
+dist
+vite.config.js
+some.html
+env-config.js

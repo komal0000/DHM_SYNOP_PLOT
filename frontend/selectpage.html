@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Redirect Buttons</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: "Georgia", "Times New Roman", Times, serif;
+            background: url('cover.jpg') no-repeat center center;
+            backdrop-filter: blur(6px) sepia(15%);
+
+            background-size: cover;
+        }
+
+        .button-container {
+            text-align: center;
+        }
+
+        .redirect-button {
+            display: inline-block;
+            margin: 10px;
+            padding: 15px 30px;
+            font-size: 18px;
+            color: white;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .redirect-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="button-container">
+        <a href="mapDashboard.html" class="redirect-button">Surface Map Plotting</a>
+        <a href="upperAirmapDashboard.html" class="redirect-button">Upper Air Map Plotting</a>
+    </div>
+
+</body>
+</html>

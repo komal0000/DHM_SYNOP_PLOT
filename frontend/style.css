@@ -1,0 +1,438 @@
+@import "node_modules/ol/ol.css";
+@import "node_modules/ol-ext/dist/ol-ext.css";
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.container {
+  height: 100%;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 85.42px 1fr;
+  grid-template-rows: 67px 1fr;
+}
+
+#logo {
+  height: 60px;
+  padding: 3px;
+}
+
+/* Toolbar */
+/* .toolbar { */
+/* display: flex; */
+/* justify-content: space-between; */
+/* background: #f0f0f0; */
+/* padding: 10px; */
+/* border-bottom: 1px solid #ccc; */
+/* z-index: 1000; */
+/* } */
+/* .toolbar-child { */
+  /* display: flex; */
+  /* align-items: center; */
+  /* gap: 10px; */
+/* } */
+/* css edited by shruti statrs from here */
+/* .toolbar-items { */
+  /* display: flex; */
+  /* align-items: center; */
+  /* gap: 6px; */
+  /* background: #fff; */
+  /* padding: 5px; */
+  /* border-radius: 4px; */
+  /* box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); */
+/* } */
+/* .toolbar-items .item { */
+  /* cursor: pointer; */
+  /* padding: 4px; */
+  /* display: inline-flex; */
+  /* border-radius: 3px; */
+  /* transition: background 0.2s; */
+/* } */
+.toolbar-items .item:hover:not(:last-child) {
+  background: #e0e0e0;
+}
+.toolbar-items .item img {
+  width: 20px;
+  height: 20px;
+}
+/* css edited by shruti ends here */
+/* added by shruti */
+.custom-select {
+  position: relative;
+  min-width: 250px;
+}
+.custom-select select {
+  /* appearance: none; */
+  /* -webkit-appearance: none; */
+  background-color: #fff;
+  width: 100%;
+  padding: 10px 6px;
+  font-size: 16px;
+  color: #676767;
+  letter-spacing: 0.5px;
+  border: none;
+}
+.custom-select select:focus {
+  outline: none;
+}
+.toolbar {
+  grid-column-start: 2;
+  background-color: white;
+  border-bottom: 1px solid #ccc;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+}
+
+.toolbar-child {
+  display: flex;
+  align-items: center;
+  width: 80%;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.toolbar-items {
+  display: flex;
+  margin: 5px;
+  border: 1px solid rgba(0, 0, 0, 0.233);
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  padding: 5px;
+  border-radius: 4px;
+}
+/*  */
+.item {
+  padding: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+/*  */
+/* .item img { */
+/* width: 24px; */
+/* height: 24px; */
+/* } */
+
+#observation-time {
+  padding: 4px 8px;
+  border: none;
+  /*  background: #f1f1f1; */
+  background: transparent;
+  border-radius: 4px;
+}
+
+/* Menubar */
+.menubar {
+  grid-row-start: 2;
+  grid-row-end: 3;
+  background-color: white;
+  border-right: #e7e7e7 3px solid;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  cursor: pointer;
+  border-bottom: #e7e7e7 1px solid;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.menu-item:hover {
+  background-color: #f5f5f5;
+}
+
+/* Content */
+.content {
+  grid-column-start: 2;
+  grid-row-start: 2;
+  position: relative;
+}
+
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+.layerpanel {
+  width: 250px;
+  height: 70vh;
+  background-color: rgba(0, 0, 0, 0.743);
+  position: relative;
+  top: 10%;
+  right: 0.5rem;
+  float: right;
+  border-radius: 3px;
+  color: white;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.layerpanel h3 {
+  text-align: center;
+  margin: 10px 0 15px 0;
+  letter-spacing: 0.75px;
+}
+
+.layerswitcher-opacity {
+  display: none;
+}
+
+.ol-layerswitcher .layerup {
+  height: 1.5em;
+}
+.li-content {
+  display: inline-flex !important;
+  align-items: center;
+}
+.ol-layerswitcher .panel li label {
+  height: 1.5rem;
+}
+.ol-layerswitcher .panel li label span {
+  margin-top: 3px;
+  padding-left: 6px;
+}
+/* checkbox */
+.ol-layerswitcher [type="checkbox"] + label:before {
+  width: 1.35rem;
+  height: 1.35rem;
+  top: unset;
+  border-width: 1px;
+  border-radius: 3px;
+}
+.ol-layerswitcher [type="checkbox"]:checked + label:after {
+  top: 0.025em;
+  left: 0.5em;
+  /*  border-width: 0 2px 2px 0; */
+  border-radius: 1px;
+  box-shadow: none;
+}
+.ol-layerswitcher .expend-layers:after {
+  background: #fff !important;
+  width: 3px;
+  border-radius: 0.25px;
+}
+.ol-layerswitcher .expend-layers:before {
+  background: #fff;
+  height: 3px;
+  border-radius: 0.25px;
+  left: -0.5px;
+  margin-top: -1.5px;
+  /*  width: 99%; */
+}
+.ol-layerswitcher .collapse-layers:before {
+  background: #fff;
+  height: 3px;
+  border-radius: 0.25px;
+  width: 99%;
+}
+.layerup {
+  display: none !important;
+}
+
+.legend {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.legend-logo {
+  width: 80px;
+}
+.textcenter{
+    text-align: center;
+    font-family: "Georgia","Times New Roman", Times, serif;
+    font-weight: bold;
+    color: rgb(246, 3, 3);
+
+  }
+
+.legend-content {
+  font-size: 14px;
+  
+  font-weight: bold;
+  color: #333;
+}
+
+#weather-popup.weather-popup {
+  background-color: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  max-width: 300px;
+  z-index: 10000;
+  position: absolute;
+  pointer-events: none;
+  font-family: Arial, sans-serif;
+  display: none; /* Controlled by JavaScript */
+}
+.weather-popup .popup-header h3 {
+  margin: 0;
+  font-size: 1.2em;
+}
+
+.weather-popup .location-meta {
+  display: flex;
+  gap: 10px;
+  color: #555;
+}
+
+.weather-popup .weather-report {
+  display: flex;
+  gap: 10px;
+}
+
+.weather-popup .current-conditions {
+  text-align: center;
+}
+
+.weather-popup .weather-icon {
+  font-size: 2em;
+}
+
+.weather-popup .temperature {
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.weather-popup .weather-details {
+  flex: 1;
+}
+
+.weather-popup .detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 5px 0;
+}
+
+.weather-popup .detail-label {
+  font-weight: bold;
+}
+
+.weather-popup .wind-direction {
+  display: inline-block;
+}
+
+.weather-popup .pressure-up {
+  color: green;
+}
+
+.weather-popup .pressure-down {
+  color: red;
+}
+
+.weather-popup .no-report {
+  text-align: center;
+}
+
+.weather-popup .no-report-icon {
+  font-size: 2em;
+}
+
+.weather-popup .popup-footer {
+  margin-top: 10px;
+  color: #777;
+}
+/* Login Form */
+.open-button {
+  background-color: #555;
+  color: white;
+  padding: 16px 20px;
+  border: none;
+  cursor: pointer;
+  opacity: 0.8;
+  position: fixed;
+  bottom: 23px;
+  right: 28px;
+  width: 280px;
+}
+
+.form-popup {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  right: 15px;
+  border: 3px solid #f1f1f1;
+  z-index: 9;
+}
+
+.form-container {
+  max-width: 300px;
+  padding: 10px;
+  background-color: white;
+}
+
+.form-container input[type="text"],
+.form-container input[type="password"] {
+  width: 90%;
+  padding: 15px;
+  margin: 5px 0 22px 0;
+  border: none;
+  background: #f1f1f1;
+}
+
+.form-container input[type="text"]:focus,
+.form-container input[type="password"]:focus {
+  background-color: #ddd;
+  outline: none;
+}
+
+.form-container .btn {
+  background-color: #04aa6d;
+  color: white;
+  padding: 16px 20px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 10px;
+  opacity: 0.8;
+}
+
+.form-container .cancel {
+  background-color: red;
+}
+
+.form-container .btn:hover,
+.open-button:hover {
+  opacity: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    grid-template-columns: 60px 1fr;
+  }
+  .toolbar-child {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .layerpanel {
+    width: 200px;
+  }
+}

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weather Map Analysis</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v9.2.4/ol.css">
+    <style>
+        #map { height: 85vh; width: 100%; }
+        #controls { height: 15vh; text-align: center; padding: 10px; }
+        #controls select, #controls button { margin: 5px; padding: 5px; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="controls">
+        <label for="level">Select Level: </label>
+        <select id="level">
+            <option value="SURFACE">Surface</option>
+            <option value="850HPA">850 hPa</option>
+            <option value="700HPA">700 hPa</option>
+            <option value="500HPA">500 hPa</option>
+            <option value="200HPA">200 hPa</option>
+        </select>
+        <label for="map-type">Export Format: </label>
+        <select id="map-type">
+            <option value="PNG">PNG</option>
+            <option value="SVG">SVG</option>
+            <option value="PDF">PDF</option>
+        </select>
+        <button id="export-map-btn">Export Map</button>
+        <button id="edit-isobars-btn">Edit Isobars</button>
+        <button id="edit-isotherms-btn">Edit Isotherms</button>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
+    <script>
+        const map = new ol.Map({
+            target: 'map',
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                })
+            ],
+            view: new ol.View({
+                center: ol.proj.fromLonLat([84, 28]), // Center on Nepal
+                zoom: 6
+            })
+        });
+
+        // Isobar layer
+        const isobarSource = new ol.source.Vector();
+        const isobarLayer = new ol.layer.Vector({
+            source: isobarSource,
+            style: new ol.style.Style({
+                stroke: new ol.style.Stroke({ color: 'black', width: 2 })
+            })
+        });
+        map.addLayer(isobarLayer);
+
+        // Isotherm layer
+        const isothermSource = new ol.source.Vector();
+        const isothermLayer = new ol.layer.Vector({
+            source: isothermSource,
+            style: new ol.style.Style({
+                stroke: new ol.style.Stroke({ color: 'red', width: 2, lineDash: [5, 5] })
+            })
+        });
+        map.addLayer(isothermLayer);
+
+        // Station layer
+        const stationSource = new ol.source.Vector();
+        const stationLayer = new ol.layer.Vector({
+            source: stationSource,
+            style: function(feature) {
+                const windSpeed = feature.get('wind_speed');
+                const windDir = feature.get('wind_direction');
+                const pressure = feature.get('pressure');
+                const temp = feature.get('temperature');
+                const weather = feature.get('weather') || 'clear';
+                let barbText = windSpeed ? '➤'.repeat(Math.round(windSpeed / 5)) : '';
+                return new ol.style.Style({
+                    image: new ol.style.Icon({
+                        src: `/static/weathericons/${weather.toLowerCase()}.png`,
+                        scale: 0.5
+                    }),
+                    text: new ol.style.Text({
+                        text: [
+                            barbText,
+                            `P:${pressure ? Math.round(pressure % 100) : ''}`,
+                            `T:${temp || ''}`
+                        ].filter(Boolean).join('\n'),
+                        font: '12px Arial',
+                        fill: new ol.style.Fill({ color: 'black' }),
+                        offsetY: 10,
+                        rotation: windDir ? -windDir * Math.PI / 180 : 0
+                    })
+                });
+            }
+        });
+        map.addLayer(stationLayer);
+
+        // Pressure center layer
+        const centerSource = new ol.source.Vector();
+        const centerLayer = new ol.layer.Vector({
+            source: centerSource,
+            style: function(feature) {
+                const centerType = feature.get('center_type');
+                return new ol.style.Style({
+                    text: new ol.style.Text({
+                        text: centerType === 'HIGH' ? 'H' : 'L',
+                        font: 'bold 24px Arial',
+                        fill: new ol.style.Fill({ color: centerType === 'HIGH' ? 'blue' : 'red' })
+                    })
+                });
+            }
+        });
+        map.addLayer(centerLayer);
+
+        // Fetch data for a given level
+        function fetchData(level) {
+            stationSource.clear();
+            isobarSource.clear();
+            isothermSource.clear();
+            centerSource.clear();
+
+            fetch(`/api/stations/?level=${level}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Stations data:', data); // Debug log
+                    const format = new ol.format.GeoJSON();
+                    data.forEach(item => {
+                        try {
+                            const feature = format.readFeature(item.location);
+                            feature.setProperties(item);
+                            stationSource.addFeature(feature);
+                        } catch (e) {
+                            console.error('Error parsing station feature:', item, e);
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching stations:', error));
+
+            fetch(`/api/isobars/?level=${level}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Isobars data:', data); // Debug log
+                    const format = new ol.format.GeoJSON();
+                    data.forEach(item => {
+                        try {
+                            const feature = format.readFeature(item.geometry);
+                            feature.setId(item.id);
+                            feature.setProperties({ pressure: item.pressure });
+                            isobarSource.addFeature(feature);
+                        } catch (e) {
+                            console.error('Error parsing isobar feature:', item, e);
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching isobars:', error));
+
+            fetch(`/api/isotherms/?level=${level}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Isotherms data:', data); // Debug log
+                    const format = new ol.format.GeoJSON();
+                    data.forEach(item => {
+                        try {
+                            const feature = format.readFeature(item.geometry);
+                            feature.setId(item.id);
+                            feature.setProperties({ temperature: item.temperature });
+                            isothermSource.addFeature(feature);
+                        } catch (e) {
+                            console.error('Error parsing isotherm feature:', item, e);
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching isotherms:', error));
+
+            fetch(`/api/pressure-centers/?level=${level}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Pressure centers data:', data); // Debug log
+                    const format = new ol.format.GeoJSON();
+                    data.forEach(item => {
+                        try {
+                            const feature = format.readFeature(item.location);
+                            feature.setProperties({ center_type: item.center_type, pressure: item.pressure });
+                            centerSource.addFeature(feature);
+                        } catch (e) {
+                            console.error('Error parsing pressure center feature:', item, e);
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching pressure centers:', error));
+        }
+
+        // Level selection
+        document.getElementById('level').addEventListener('change', function() {
+            fetchData(this.value);
+        });
+
+        // Export map function
+        function exportMap() {
+            const mapType = document.getElementById('map-type').value;
+            const level = document.getElementById('level').value;
+
+            map.once('rendercomplete', function () {
+                const mapCanvas = document.createElement('canvas');
+                const size = map.getSize();
+                mapCanvas.width = size[0];
+                mapCanvas.height = size[1];
+                const mapContext = mapCanvas.getContext('2d');
+
+                Array.prototype.forEach.call(
+                    document.querySelectorAll('.ol-layer canvas'),
+                    function (canvas) {
+                        if (canvas.width > 0) {
+                            const opacity = canvas.parentNode.style.opacity || 1;
+                            mapContext.globalAlpha = opacity === '' ? 1 : Number(opacity);
+                            const transform = canvas.style.transform || '';
+                            const matrix = transform
+                                ? transform.match(/^matrix\(([^\(]*)\)$/)[1].split(',').map(Number)
+                                : [1, 0, 0, 1, 0, 0]; // Default identity matrix if no transform
+                            mapContext.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+                            mapContext.drawImage(canvas, 0, 0);
+                        }
+                    }
+                );
+
+                const dataUrl = mapCanvas.toDataURL('image/png');
+                fetch('/api/export/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ map_type: mapType, level: level, image_data: dataUrl })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(`Map exported: ${data.absolute_url}`);
+                })
+                .catch(error => console.error('Error exporting map:', error));
+            });
+            map.renderSync();
+        }
+
+        // Enable editing for isobars and isotherms
+        let modifyInteraction = null;
+        function enableEditing(type) {
+            if (modifyInteraction) map.removeInteraction(modifyInteraction);
+            modifyInteraction = new ol.interaction.Modify({
+                source: type === 'isobar' ? isobarSource : isothermSource
+            });
+            map.addInteraction(modifyInteraction);
+
+            modifyInteraction.on('modifyend', function(e) {
+                const feature = e.features.getArray()[0];
+                const geometry = new ol.format.GeoJSON().writeGeometry(feature.getGeometry());
+                fetch(`/api/${type}s/${feature.getId()}/`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ geometry })
+                })
+                .then(response => response.json())
+                .then(data => console.log(`${type} updated:`, data))
+                .catch(error => console.error(`Error updating ${type}:`, error));
+            });
+        }
+
+        // Initial fetch
+        fetchData('SURFACE');
+
+        // Add event listeners for buttons
+        document.getElementById('export-map-btn').addEventListener('click', exportMap);
+        document.getElementById('edit-isobars-btn').addEventListener('click', () => enableEditing('isobar'));
+        document.getElementById('edit-isotherms-btn').addEventListener('click', () => enableEditing('isotherm'));
+    </script>
+</body>
+</html> 

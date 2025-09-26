@@ -1,0 +1,22 @@
+SELECT
+	STATION_ID,
+	OBSERVATION_TIME,
+	LEVEL,
+	WIND_DIRECTION,
+	WIND_SPEED,
+	TEMPERATURE,
+	DEW_POINT,
+	PRESSURE,
+	PRESSURE_TENDENCY,
+	PRESSURE_CHANGE,
+	CLOUD_COVER,
+	CLOUD_BASE,
+	VISIBILITY,
+	WEATHER,
+	STATION_ID
+FROM
+	PUBLIC.ANALYSIS_SYNOPREPORT order by observation_time desc, station_id ; 
+	 
+                                iRixhVV Nddff 1snTTT   2snTdTdTd   3P0P0P0P0  4PPPP 7wwW1W2 8NhCLCMCH  9GGgg 
+--202506050600 AAXX 05064 44404  42358  50904 10212    20152       38123      48452         83201                      333 58020=
+	-- TRUNCATE table public.analysis_synopreport;
