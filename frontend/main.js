@@ -91,34 +91,36 @@ function loadObservationTimes() {
       select.innerHTML = '<option value="">Select Observation Time</option>';
 
       // Normalize times to consistent ISO format ending with 'Z'
-      const normalizedTimes = times.map(time => {
+      // Ensure times is an array before mapping
+      const timesArray = Array.isArray(times) ? times : [];
+      const normalizedTimes = timesArray.map(time => {
         return time.replace(/\+00:00Z$/, 'Z').replace(/Z$/, 'Z');
       });
 
       // Filter only times where hour is divisible by 3 AND minutes and seconds are zero
-      const filteredTimes = normalizedTimes.filter(timeStr => {
-        const date = new Date(timeStr);
-        if (isNaN(date)) {
-          console.warn(`Invalid date encountered and skipped: ${timeStr}`);
-          return false;
-        }
-        const hour = date.getUTCHours();
-        const minutes = date.getUTCMinutes();
-        const seconds = date.getUTCSeconds();
-        return hour % 3 === 0 && minutes === 0 && seconds === 0;
-      });
+      // const filteredTimes = normalizedTimes.filter(timeStr => {
+      //   const date = new Date(timeStr);
+      //   if (isNaN(date)) {
+      //     console.warn(`Invalid date encountered and skipped: ${timeStr}`);
+      //     return false;
+      //   }
+      //   const hour = date.getUTCHours();
+      //   const minutes = date.getUTCMinutes();
+      //   const seconds = date.getUTCSeconds();
+      //   return hour % 3 === 0 && minutes === 0 && seconds === 0;
+      // });
 
       // Sort descending by date
-      filteredTimes.sort((a, b) => new Date(b) - new Date(a));
+      // filteredTimes.sort((a, b) => new Date(b) - new Date(a));
 
       // Populate dropdown options
-      filteredTimes.forEach(time => {
+      normalizedTimes.forEach(time => {
         const option = new Option(time, time);
         select.add(option);
       });
 
-      if (filteredTimes.length > 0) {
-        select.value = filteredTimes[0];
+      if (normalizedTimes.length > 0) {
+        select.value = normalizedTimes[0];
         console.log(`Default observation time: ${select.value}`);
         refreshLayers(select.value);
         updateLegendObservationTime(select.value);
@@ -134,7 +136,7 @@ function loadObservationTimes() {
           refreshLayers(selectedTime);
           updateLegendObservationTime(selectedTime);
         } else {
-          const latestTime = filteredTimes.length > 0 ? filteredTimes[0] : '';
+          const latestTime = normalizedTimes.length > 0 ? normalizedTimes[0] : '';
           console.log(`No time selected, using latest: ${latestTime}`);
           refreshLayers(latestTime);
           updateLegendObservationTime(latestTime);
@@ -178,7 +180,18 @@ async function refreshLayers(observationTime) {
     // Fetch and add stations
     const stationsResponse = await fetchWithRetry(`${normalizedApiBaseUrl}api/weather-stations/?limit=1000`);
     const stationData = await stationsResponse.json();
-    const stations = Array.isArray(stationData) ? stationData : (stationData.features || stationData.results || []);
+    // Ensure we have an array for stations
+    let stations = [];
+    if (Array.isArray(stationData)) {
+      stations = stationData;
+    } else if (stationData && Array.isArray(stationData.features)) {
+      stations = stationData.features;
+    } else if (stationData && stationData.results && Array.isArray(stationData.results.features)) {
+      // Handle paginated GeoJSON: results contains FeatureCollection
+      stations = stationData.results.features;
+    } else if (stationData && Array.isArray(stationData.results)) {
+      stations = stationData.results;
+    }
     if (stations.length > 0) {
       addStationsToMap(stations);
     } else {
@@ -189,7 +202,20 @@ async function refreshLayers(observationTime) {
     const reportUrl = `${normalizedApiBaseUrl}api/reports/?level=SURFACE&observation_time=${encodeURIComponent(observationTime)}&limit=1000`;
     const reportsResponse = await fetchWithRetry(reportUrl);
     const reportData = await reportsResponse.json();
-    weatherReports = (Array.isArray(reportData) ? reportData : (reportData.features || reportData.results || [])).map(report => {
+    // Ensure we have an array to work with
+    let reportArray = [];
+    if (Array.isArray(reportData)) {
+      reportArray = reportData;
+    } else if (reportData && Array.isArray(reportData.features)) {
+      reportArray = reportData.features;
+    } else if (reportData && reportData.results && Array.isArray(reportData.results.features)) {
+      // Handle paginated GeoJSON: results contains FeatureCollection
+      reportArray = reportData.results.features;
+    } else if (reportData && Array.isArray(reportData.results)) {
+      reportArray = reportData.results;
+    }
+    
+    weatherReports = reportArray.map(report => {
       let geometry = report.geometry;
       if (typeof geometry === 'string') {
         try {
