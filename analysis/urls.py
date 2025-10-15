@@ -8,6 +8,7 @@ from .views import (
     ExportFileView, ExportListView, ExportDownloadView
     , ExportDelete
 )
+from .geoserver_proxy import GeoServerProxy
 
 router = DefaultRouter()
 router.register(r'weather-stations', WeatherStationViewSet, basename='station')
@@ -33,4 +34,5 @@ urlpatterns = [
     path('export-list/', ExportListView.as_view(), name='export-list'),
     path('export-delete/<int:export_id>/', ExportDelete.as_view(), name='export-delete'),
     path('export-download/<int:export_id>/', ExportDownloadView.as_view(), name='export-download'),
+    path('geoserver-proxy/', GeoServerProxy.as_view(), name='geoserver-proxy'),
 ]

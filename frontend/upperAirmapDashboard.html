@@ -171,6 +171,343 @@
       z-index: 1000;
       max-width: 300px;
     }
+
+    /* Export Drawer Styles */
+    .upper-export-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 60%;
+      height: 100vh;
+      background: white;
+      border-left: 2px solid #ccc;
+      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .export-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      background: #f0f0f0;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .export-drawer-header h3 {
+      margin: 0;
+      font-family: "Georgia", "Times New Roman", Times, serif;
+    }
+
+    .export-drawer-header .btn {
+      background: #ff3636;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .export-drawer-content {
+      flex: 1;
+      display: flex;
+      height: calc(100vh - 70px);
+    }
+
+    .export-list {
+      width: 100%;
+      padding: 15px;
+      border-right: 1px solid #ccc;
+      overflow-y: auto;
+      background: #f9f9f9;
+    }
+
+    .export-item {
+      padding: 10px;
+      margin: 5px 0;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid #ddd;
+      transition: background 0.2s;
+      position: relative;
+    }
+
+    .export-item:hover {
+      background: #e0e0e0;
+    }
+
+    .export-item.selected {
+      background: #4b6cb7;
+      color: white;
+    }
+
+    .export-item-name {
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .export-item-format {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .export-item-format.pdf {
+      background: #ff4757;
+      color: white;
+    }
+
+    .export-item-format.png {
+      background: #2ed573;
+      color: white;
+    }
+
+    .export-item-format.jpeg {
+      background: #ffa502;
+      color: white;
+    }
+
+    .export-item-meta {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .export-item.selected .export-item-meta {
+      color: #ccc;
+    }
+
+    .export-preview {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f5f5;
+    }
+
+    .export-preview-placeholder {
+      text-align: center;
+      color: #666;
+      font-size: 18px;
+    }
+
+    #export-preview-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .export-loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    /* Lightbox Styles - Add this to your existing <style> section */
+    .export-lightbox {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lightbox-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+    }
+
+    .lightbox-content {
+      position: relative;
+      width: 90%;
+      height: 90%;
+      max-width: 1200px;
+      max-height: 900px;
+      background: white;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #ff3636;
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .lightbox-close:hover {
+      background: #cc0000;
+    }
+
+    .lightbox-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 20px;
+      padding-top: 60px;
+    }
+
+    .lightbox-image {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .lightbox-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .lightbox-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      background: #f0f0f0;
+      border-top: 1px solid #ccc;
+      border-radius: 0 0 8px 8px;
+    }
+
+    .lightbox-filename {
+      font-weight: bold;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .lightbox-download {
+      background: #4b6cb7;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .lightbox-download:hover {
+      background: #3a5a9a;
+    }
+
+    /* Additional styles for export item buttons */
+    .export-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .export-item-content {
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .export-item-view {
+      background: #4b6cb7;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .export-item-view:hover {
+      background: #3a5a9a;
+    }
+
+    .export-item-delete {
+      background: red;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .export-item-delete:hover {
+      background: #cc0000;
+    }
+     /* Keep backward compatibility for PDF classes */
+    .pdf-drawer {
+      @extend .Upper-export-drawer;
+    }
+
+    .pdf-drawer-header {
+      @extend .export-drawer-header;
+    }
+
+    .pdf-drawer-content {
+      @extend .export-drawer-content;
+    }
+
+    .pdf-list {
+      @extend .export-list;
+    }
+
+    .pdf-item {
+      @extend .export-item;
+    }
+
+    .pdf-item-name {
+      @extend .export-item-name;
+    }
+
+    .pdf-item-meta {
+      @extend .export-item-meta;
+    }
+
+    .pdf-preview {
+      @extend .export-preview;
+    }
+
+    .pdf-preview-placeholder {
+      @extend .export-preview-placeholder;
+    }
+
+    #pdf-preview-frame {
+      @extend #export-preview-frame;
+    }
+
+    .pdf-loading {
+      @extend .export-loading;
+    }
   </style>
 </head>
 
@@ -181,7 +518,7 @@
     <!-- Toolbar -->
     <div class="toolbar">
       <div class="toolbar-child">
-        
+
         <!-- Pan Control -->
         <div class="toolbar-items">
           <div class="item pan-up" title="Pan Up"><img src="res/iocns/vector-24.svg" alt="Pan Up"></div>
@@ -206,8 +543,7 @@
           <div class="item edit-line" title="Draw Line"><img src="res/iocns/vector-37.svg" alt="Edit Line"></div>
           <div class="item edit-polygon" title="Draw Polygon"><img src="res/iocns/vector-38.svg" alt="Edit Polygon">
           </div>
-          <div class="item edit-eraser" title="Eraser"><img src="res/iocns/eraser.svg"
-              alt="Eraser"></div>
+          <div class="item edit-eraser" title="Eraser"><img src="res/iocns/eraser.svg" alt="Eraser"></div>
           <div class="item edit-delete" title="Delete Feature"><img src="res/iocns/delete-1-svgrepo-com.svg"
               alt="Edit Delete"></div>
           <div class="item edit-undo" title="Undo Edit"><img src="res/iocns/undo-svgrepo-com.svg" alt="Edit Undo"></div>
@@ -227,8 +563,16 @@
           </select>
         </div>
       </div>
+      <div class="toolbar-child">
+        <!-- Export Container Button -->
+        <div class="toolbar-items">
+          <div class="item upper-export-container" title="Export Container"><img src="res/iocns/vector-29.svg"
+              alt="Export Container" style="transform: rotate(0deg);"></div>
+        </div>
+      </div>
       <div>
-        <a href="index.html"><img src="res/iocns/vector-29.svg" alt="Profile" class="profile" title="Logout" style="transform: rotate(90deg);"></a>
+        <a href="index.html"><img src="res/iocns/vector-29.svg" alt="Profile" class="profile" title="Logout"
+            style="transform: rotate(90deg);"></a>
       </div>
     </div>
     <!-- Menubar -->
@@ -241,10 +585,10 @@
       <button class="menu-item  btn edit-sign" title="Add Sign">O</button>
       <button class="menu-item  btn edit-textbox" title="Add Text Box">T</button>
 
-      <button class="menu-item  btn export-jpeg" title="Export as JPEG">JPEG</button>
-      <button class="menu-item  btn export-png" title="Export as PNG">PNG</button>
-      <button class="menu-item  btn export-area" title="Export area">Area</button>
-      <button class="menu-item  btn export-pdf" title="Export as PDF">PDF</button>
+      <button class="menu-item  btn export-upper-jpeg" title="Export as JPEG">JPEG</button>
+      <button class="menu-item  btn export-upper-png" title="Export as PNG">PNG</button>
+      <button class="menu-item  btn export-upper-area" title="Export area">Area</button>
+      <button class="menu-item  btn export-upper-pdf" title="Export as PDF">PDF</button>
       <button class="copy-clipboard" title="Copy to Clipboard">Clipboard</button>
       <!-- <select id="resolution-scale">
         <option value="1">1x (~150 DPI)</option>
@@ -276,7 +620,21 @@
         </div>
       </div>
     </div>
-
+    <div id="upper-export-drawer" class="upper-export-drawer" style="display: none;">
+      <div class="export-drawer-header">
+        <h3>Saved Exports</h3>
+        <button id="upper-export-drawer-close" class="btn">×</button>
+      </div>
+      <div class="export-drawer-content">
+        <div id="export-list" class="export-list">
+          <div class="export-loading">Loading exports...</div>
+        </div>
+        <!-- <div class="export-preview">
+          <div class="export-preview-placeholder">Select an export to preview</div>
+          <iframe id="export-preview-frame" title="Export Preview" style="display: none;"></iframe>
+        </div> -->
+      </div>
+    </div>
   </div>
 
 

@@ -227,11 +227,17 @@ export function setupToolbarInteractions(map) {
   document.querySelector('.export-container')?.addEventListener('click', () => {
     openExportDrawer();
   });
+  document.querySelector('.upper-export-container')?.addEventListener('click', () => {
+    openUpperExportDrawer();
+  });
+
 
   document.querySelector('#export-drawer-close')?.addEventListener('click', () => {
     closeExportDrawer();
   });
-  
+  document.querySelector('#upper-export-drawer-close')?.addEventListener('click', () => {
+    closeUpperExportDrawer();
+  });
   // Keep backward compatibility for PDF container
   document.querySelector('.pdf-container')?.addEventListener('click', () => {
     openExportDrawer();
@@ -263,9 +269,30 @@ function closeExportDrawer() {
   }
 }
 
+function openUpperExportDrawer() {
+  const drawer = document.getElementById('upper-export-drawer');
+  if (drawer) {
+    drawer.style.display = 'flex';
+    loadExportList();
+  }
+}
+
+/**
+ * Close export drawer
+ */
+function closeUpperExportDrawer() {
+  const drawer = document.getElementById('upper-export-drawer');
+  if (drawer) {
+    drawer.style.display = 'none';
+  }
+}
+
+
 // Keep backward compatibility functions
 function openPDFDrawer() { openExportDrawer(); }
 function closePDFDrawer() { closeExportDrawer(); }
+function openUpperPDFDrawer() { openUpperExportDrawer(); }
+function closeUpperPDFDrawer() { closeUpperExportDrawer(); }
 
 /**
  * Load export list from API
@@ -277,8 +304,14 @@ async function loadExportList() {
   try {
     exportListElement.innerHTML = '<div class="export-loading">Loading exports...</div>';
     
+    // Detect which dashboard we're on
+    const isUpperAirDashboard = document.getElementById('upper-export-drawer') !== null;
+    const levelFilter = isUpperAirDashboard ? 'UPPERAIRMAP' : 'SURFACE';
+    
+    console.log(`Loading exports for dashboard: ${isUpperAirDashboard ? 'Upper Air' : 'Surface'}, filtering by level: ${levelFilter}`);
+    
     const normalizedApiBaseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl : `${config.apiBaseUrl}/`;
-    const response = await fetch(`${normalizedApiBaseUrl}api/export-list/`);
+    const response = await fetch(`${normalizedApiBaseUrl}api/export-list/?level=${levelFilter}`);
     
     if (!response.ok) {
       throw new Error('Failed to load exports');
@@ -286,14 +319,17 @@ async function loadExportList() {
     
     const exports = await response.json();
     
-    if (exports.length === 0) {
+    // Additional client-side filtering to ensure we only show correct level
+    const filteredExports = exports.filter(exp => exp.level === levelFilter);
+    
+    if (filteredExports.length === 0) {
       exportListElement.innerHTML = '<div class="export-loading">No exports found</div>';
       return;
     }
     
     // Create export list items
     exportListElement.innerHTML = '';
-    exports.forEach(exportItem => {
+    filteredExports.forEach(exportItem => {
       const exportItemElement = createExportListItem(exportItem);
       exportListElement.appendChild(exportItemElement);
     });

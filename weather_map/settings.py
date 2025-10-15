@@ -209,3 +209,7 @@ LOGGING = {
         },
     },
 }
+
+# Maximum upload size (default 50 MB if not set)
+DATA_UPLOAD_MAX_MEMORY_SIZE = env.int('MAX_UPLOAD_SIZE', default=50 * 1024 * 1024)
+FILE_UPLOAD_MAX_MEMORY_SIZE = env.int('MAX_UPLOAD_SIZE', default=50 * 1024 * 1024)

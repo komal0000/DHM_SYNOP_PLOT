@@ -98,29 +98,30 @@ function loadObservationTimes() {
       });
 
       // Filter only times where hour is divisible by 3 AND minutes and seconds are zero
-      // const filteredTimes = normalizedTimes.filter(timeStr => {
-      //   const date = new Date(timeStr);
-      //   if (isNaN(date)) {
-      //     console.warn(`Invalid date encountered and skipped: ${timeStr}`);
-      //     return false;
-      //   }
-      //   const hour = date.getUTCHours();
-      //   const minutes = date.getUTCMinutes();
-      //   const seconds = date.getUTCSeconds();
-      //   return hour % 3 === 0 && minutes === 0 && seconds === 0;
-      // });
+      const filteredTimes = normalizedTimes.filter(timeStr => {
+        const date = new Date(timeStr);
+        if (isNaN(date)) {
+          console.warn(`Invalid date encountered and skipped: ${timeStr}`);
+          return false;
+        }
+        const hour = date.getUTCHours();
+        const minutes = date.getUTCMinutes();
+        const seconds = date.getUTCSeconds();
+        return hour % 3 === 0 && minutes === 0 && seconds === 0;
+      });
 
       // Sort descending by date
-      // filteredTimes.sort((a, b) => new Date(b) - new Date(a));
+      filteredTimes.sort((a, b) => new Date(b) - new Date(a));
 
       // Populate dropdown options
-      normalizedTimes.forEach(time => {
+      filteredTimes.forEach(time => {
         const option = new Option(time, time);
         select.add(option);
       });
 
-      if (normalizedTimes.length > 0) {
-        select.value = normalizedTimes[0];
+      console.log(' filtered observation times:', filteredTimes);
+      if (filteredTimes.length > 0) {
+        select.value = filteredTimes[0];
         console.log(`Default observation time: ${select.value}`);
         refreshLayers(select.value);
         updateLegendObservationTime(select.value);

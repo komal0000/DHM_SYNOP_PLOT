@@ -37,7 +37,6 @@ function exportMap(map, format, filename, extent) {
 
     const canvasWidth = canvas.width;
     const canvasHeight = canvas.height;
-
     let exportCanvas = canvas;
 
     if (extent) {
@@ -80,7 +79,7 @@ function exportMap(map, format, filename, extent) {
 
     // Load logo
     const logo = new Image();
-    logo.src = '/res/nepallogo.png'; // ⚠️ Update this path as needed
+    logo.src = '/res/nepallogo.png';
 
     logo.onload = () => {
       const finalCanvas = document.createElement('canvas');
@@ -93,7 +92,7 @@ function exportMap(map, format, filename, extent) {
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
-      // Draw main exportCanvas image
+      // Draw map image
       ctx.drawImage(exportCanvas, 0, 0);
 
       // Header details
@@ -104,18 +103,20 @@ function exportMap(map, format, filename, extent) {
       ];
 
       const padding = 20 * scaleFactor;
+      const margin = 10 * scaleFactor;
+      const logoMarginBottom = 16 * scaleFactor;
       const lineHeight = 16 * scaleFactor;
       const fontSize = 12 * scaleFactor;
       const fontFamily = 'Arial';
 
-      // Draw logo
-      const logoWidth = 80 * scaleFactor;
-      const logoHeight = 80 * scaleFactor;
+      // Draw logo (bottom-left)
+      const logoWidth = 75 * scaleFactor;
+      const logoHeight = 75 * scaleFactor;
       const logoX = padding;
-      const logoY = finalCanvas.height - padding - logoHeight - (headerLines.length * lineHeight) - 10 * scaleFactor;
+      const logoY = finalCanvas.height - padding - logoHeight - (headerLines.length * lineHeight) - logoMarginBottom;
       ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
 
-      // Draw header lines (bottom-up)
+      // Draw header lines (above logo)
       ctx.fillStyle = 'red';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'bottom';
@@ -126,16 +127,21 @@ function exportMap(map, format, filename, extent) {
         currentY -= lineHeight;
       });
 
-      // Draw observation time in black
+      // Draw observation time (bottom-left)
       let observationTime = document.getElementById('legend-observation-time')?.innerText.trim() || 'N/A';
-if (observationTime.toLowerCase().startsWith('observation time:')) {
-  observationTime = observationTime.substring('observation time:'.length).trim();
-}
-
+      if (observationTime.toLowerCase().startsWith('observation time:')) {
+        observationTime = observationTime.substring('observation time:'.length).trim();
+      }
       ctx.fillStyle = 'black';
+      ctx.textAlign = 'left';
       ctx.fillText(observationTime, padding, finalCanvas.height - padding);
 
-      // Export to format
+      // Draw "Prepared by" (bottom-right)
+      ctx.fillStyle = 'black';
+      ctx.textAlign = 'right';
+      ctx.fillText('Prepared by: ....................', finalCanvas.width - padding, finalCanvas.height - padding);
+
+      // ---- EXPORT ----
       try {
         if (format === 'pdf') {
           const pdf = new jsPDF({
@@ -143,48 +149,46 @@ if (observationTime.toLowerCase().startsWith('observation time:')) {
             unit: 'px',
             format: [finalCanvas.width, finalCanvas.height]
           });
+
           const imgData = finalCanvas.toDataURL('image/png', 1.0);
           pdf.addImage(imgData, 'PNG', 0, 0, finalCanvas.width, finalCanvas.height);
-          
-          // Save to database - use direct binary output instead of blob
-          try {
-            const pdfData = pdf.output('datauristring'); // Get data URI directly
-            console.log('PDF data URI length:', pdfData.length);
-            console.log('PDF data URI starts with:', pdfData.substring(0, 50));
-            
-            saveExportToDatabaseDirect(pdfData, filename, 'PDF', extent).then(() => {
-              showWarning('PDF saved to database successfully.', false);
-            }).catch((error) => {
+
+          // ✅ FIX: Generate proper base64 PDF for backend
+          const arrayBuffer = pdf.output('arraybuffer');
+          const base64Data = btoa(
+            new Uint8Array(arrayBuffer)
+              .reduce((data, byte) => data + String.fromCharCode(byte), '')
+          );
+          const pdfData = `data:application/pdf;base64,${base64Data}`;
+
+          console.log('Fixed PDF data URI length:', pdfData.length);
+          console.log('Starts with:', pdfData.substring(0, 50));
+
+          // Save to database
+          saveExportToDatabaseDirect(pdfData, filename, 'PDF', extent)
+            .then(() => showWarning('PDF saved to database successfully.', false))
+            .catch((error) => {
               console.error('Failed to save PDF to database:', error);
               showWarning('PDF export completed but failed to save to database.', true);
             });
-          } catch (error) {
-            console.error('Error generating PDF data:', error);
-            showWarning('Failed to generate PDF data.', true);
-          }
-          
-          // Also download the PDF
+
+          // Download locally
           pdf.save(`${filename}.pdf`);
           showWarning('PDF exported successfully.', false);
+
         } else {
+          // PNG or JPEG
           const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
           const quality = format === 'jpeg' ? 0.9 : 1.0;
           const dataUrl = finalCanvas.toDataURL(mimeType, quality);
-          
-          // Save to database
-          try {
-            saveExportToDatabaseDirect(dataUrl, filename, format.toUpperCase(), extent).then(() => {
-              showWarning(`${format.toUpperCase()} saved to database successfully.`, false);
-            }).catch((error) => {
+
+          saveExportToDatabaseDirect(dataUrl, filename, format.toUpperCase(), extent)
+            .then(() => showWarning(`${format.toUpperCase()} saved to database successfully.`, false))
+            .catch((error) => {
               console.error(`Failed to save ${format} to database:`, error);
               showWarning(`${format.toUpperCase()} export completed but failed to save to database.`, true);
             });
-          } catch (error) {
-            console.error(`Error saving ${format} to database:`, error);
-            showWarning(`Failed to save ${format.toUpperCase()} to database.`, true);
-          }
-          
-          // Also download the file
+
           const link = document.createElement('a');
           link.href = dataUrl;
           link.download = `${filename}.${format}`;
@@ -196,6 +200,7 @@ if (observationTime.toLowerCase().startsWith('observation time:')) {
         showWarning(`Failed to export ${format.toUpperCase()}.`, true);
       }
 
+      // Cleanup
       window.devicePixelRatio = originalPixelRatio;
       map.setSize(originalSize);
       map.renderSync();
@@ -214,6 +219,7 @@ if (observationTime.toLowerCase().startsWith('observation time:')) {
   map.setSize(exportSize);
   map.renderSync();
 }
+
 
 function copyMapToClipboard(map, extent) {
   showSpinner();
@@ -323,16 +329,16 @@ export function addDragBoxExportInteraction(map, callback) {
 async function savePDFToDatabase(pdfBlob, filename, extent = null) {
   try {
     console.log('savePDFToDatabase called with blob size:', pdfBlob.size);
-    
+
     // Convert blob to base64
     const base64Data = await blobToBase64(pdfBlob);
     console.log('Base64 data length:', base64Data.length);
     console.log('Base64 data starts with:', base64Data.substring(0, 50));
-    
+
     // Get current observation time
     const observationTimeElement = document.getElementById('observation-time');
     const observationTime = observationTimeElement ? observationTimeElement.value : null;
-    
+
     // Prepare form data
     const formData = new FormData();
     formData.append('pdf_data', base64Data);
@@ -340,21 +346,21 @@ async function savePDFToDatabase(pdfBlob, filename, extent = null) {
     if (observationTime) {
       formData.append('observation_time', observationTime);
     }
-    
+
     // Send to API
     const normalizedApiBaseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl : `${config.apiBaseUrl}/`;
     const apiUrl = `${normalizedApiBaseUrl}api/pdf-export/`;
     console.log('Sending request to:', apiUrl);
     console.log('FormData keys:', Array.from(formData.keys()));
-    
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       body: formData
     });
-    
+
     console.log('Response status:', response.status);
     console.log('Response ok:', response.ok);
-    
+
     if (!response.ok) {
       console.error('Response not ok:', response.status, response.statusText);
       let errorData;
@@ -369,11 +375,11 @@ async function savePDFToDatabase(pdfBlob, filename, extent = null) {
       }
       throw new Error(errorData.error || 'Failed to save PDF');
     }
-    
+
     const result = await response.json();
     console.log('PDF saved to database:', result);
     return result;
-    
+
   } catch (error) {
     console.error('Error saving PDF to database:', error);
     throw error;
@@ -411,34 +417,40 @@ function blobToBase64(blob) {
 async function saveExportToDatabaseDirect(fileDataUri, filename, format, extent = null) {
   try {
     console.log(`saveExportToDatabaseDirect called for ${format} with data URI length:`, fileDataUri.length);
-    
+
     // Get current observation time
     const observationTimeElement = document.getElementById('observation-time');
     const observationTime = observationTimeElement ? observationTimeElement.value : null;
+
+    // Detect which dashboard we're on by checking if upper-export-drawer exists
+    const isUpperAirDashboard = document.getElementById('upper-export-drawer') !== null;
+    const level = isUpperAirDashboard ? 'UPPERAIRMAP' : 'SURFACE';
     
+    console.log(`Detected dashboard: ${isUpperAirDashboard ? 'Upper Air' : 'Surface'}, level: ${level}`);
+
     // Prepare form data
     const formData = new FormData();
     formData.append('file_data', fileDataUri); // Send data URI directly
     formData.append('format', format); // PDF, PNG, or JPEG
-    formData.append('level', 'SURFACE'); // Default level
+    formData.append('level', level); // UPPERAIRMAP or SURFACE
     if (observationTime) {
       formData.append('observation_time', observationTime);
     }
-    
+
     // Send to API
     const normalizedApiBaseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl : `${config.apiBaseUrl}/`;
     const apiUrl = `${normalizedApiBaseUrl}api/export-file/`;
     console.log(`Sending ${format} export request to:`, apiUrl);
     console.log('FormData keys:', Array.from(formData.keys()));
-    
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       body: formData
     });
-    
+
     console.log('Response status:', response.status);
     console.log('Response ok:', response.ok);
-    
+
     if (!response.ok) {
       console.error('Response not ok:', response.status, response.statusText);
       let errorData;
@@ -453,11 +465,11 @@ async function saveExportToDatabaseDirect(fileDataUri, filename, format, extent 
       }
       throw new Error(errorData.error || `Failed to save ${format}`);
     }
-    
+
     const result = await response.json();
     console.log(`${format} saved to database:`, result);
     return result;
-    
+
   } catch (error) {
     console.error('Error saving PDF to database:', error);
     throw error;
