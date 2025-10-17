@@ -189,15 +189,12 @@ def fetch_meteo_data(self):
     station_map = {str(s.station_id).zfill(5): s for s in stations}
     blocks = set(station_id[:2] for station_id in station_ids)
 
-    # Try the last 3 hours first
-
+    # Fetch data from the last 3 days to maintain 3-day history
     end_time = datetime.utcnow()
-    # begin_time_str = "2025-06-15 12:00:00+00"
-    # begin_time = datetime.fromisoformat(begin_time_str)
-    begin_time = end_time - timedelta(hours=3)
+    begin_time = end_time - timedelta(days=3)  # Changed from 3 hours to 3 days
     begin_str = begin_time.strftime('%Y%m%d%H%M')
     end_str = end_time.strftime('%Y%m%d%H%M')
-    logger.info(f"Fetching data from {begin_str} to {end_str}")
+    logger.info(f"Fetching data from {begin_str} to {end_str} (last 3 days)")
 
     total_rows = 0
     for block in blocks:

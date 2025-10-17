@@ -93,12 +93,12 @@ function loadObservationTimes() {
       // Normalize times to consistent ISO format ending with 'Z'
       // Ensure times is an array before mapping
       const timesArray = Array.isArray(times) ? times : [];
-      const normalizedTimes = timesArray.map(time => {
+      const allTimes = timesArray.map(time => {
         return time.replace(/\+00:00Z$/, 'Z').replace(/Z$/, 'Z');
       });
 
       // Filter only times where hour is divisible by 3 AND minutes and seconds are zero
-      const filteredTimes = normalizedTimes.filter(timeStr => {
+      const normalizedTimes = allTimes.filter(timeStr => {
         const date = new Date(timeStr);
         if (isNaN(date)) {
           console.warn(`Invalid date encountered and skipped: ${timeStr}`);
@@ -111,17 +111,33 @@ function loadObservationTimes() {
       });
 
       // Sort descending by date
-      filteredTimes.sort((a, b) => new Date(b) - new Date(a));
+      normalizedTimes.sort((a, b) => new Date(b) - new Date(a));
 
-      // Populate dropdown options
-      filteredTimes.forEach(time => {
-        const option = new Option(time, time);
+      // Helper function to format date with date and time
+      function formatObservationTime(isoString) {
+        const date = new Date(isoString);
+        
+        // Format: "Oct 15, 2025 - 12:00 UTC"
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = monthNames[date.getUTCMonth()];
+        const day = date.getUTCDate();
+        const year = date.getUTCFullYear();
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        
+        return `${month} ${day}, ${year} - ${hours}:${minutes} UTC`;
+      }
+
+      // Populate dropdown options with formatted labels
+      normalizedTimes.forEach(time => {
+        const label = formatObservationTime(time);
+        const option = new Option(label, time);
         select.add(option);
       });
 
-      console.log(' filtered observation times:', filteredTimes);
-      if (filteredTimes.length > 0) {
-        select.value = filteredTimes[0];
+      console.log('Filtered observation times (last 3 days):', normalizedTimes);
+      if (normalizedTimes.length > 0) {
+        select.value = normalizedTimes[0];
         console.log(`Default observation time: ${select.value}`);
         refreshLayers(select.value);
         updateLegendObservationTime(select.value);

@@ -127,12 +127,39 @@ function loadObservationTimes(level = '850HPA') {
       select.innerHTML = '<option value="">Select Observation Time</option>';
 
       const normalizedTimes = times.map(time => time.replace(/\+00:00Z$/, 'Z').replace(/Z$/, 'Z'));
+      
+      // Filter for 3-hour intervals (00, 03, 06, 09, 12, 15, 18, 21 UTC)
       const filteredTimes = normalizedTimes.filter(timeStr => {
         const date = new Date(timeStr);
-        return !isNaN(date) && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
+        if (isNaN(date)) return false;
+        const hour = date.getUTCHours();
+        const minutes = date.getUTCMinutes();
+        const seconds = date.getUTCSeconds();
+        return hour % 3 === 0 && minutes === 0 && seconds === 0;
       }).sort((a, b) => new Date(b) - new Date(a));
 
-      filteredTimes.forEach(time => select.add(new Option(time, time)));
+      // Helper function to format date with date and time
+      function formatObservationTime(isoString) {
+        const date = new Date(isoString);
+        
+        // Format: "Oct 15, 2025 - 12:00 UTC"
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = monthNames[date.getUTCMonth()];
+        const day = date.getUTCDate();
+        const year = date.getUTCFullYear();
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        
+        return `${month} ${day}, ${year} - ${hours}:${minutes} UTC`;
+      }
+
+      // Populate dropdown with formatted labels
+      filteredTimes.forEach(time => {
+        const label = formatObservationTime(time);
+        select.add(new Option(label, time));
+      });
+
+      console.log('Filtered observation times (last 3 days):', filteredTimes);
 
       if (filteredTimes.length > 0) {
         select.value = filteredTimes[0];

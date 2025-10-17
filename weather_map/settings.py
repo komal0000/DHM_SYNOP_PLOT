@@ -168,12 +168,13 @@ CELERY_ENABLE_UTC = True
 CELERY_BEAT_SCHEDULE = {
     'fetch-meteo-data': {
         'task': 'analysis.tasks.fetch_meteo_data',
-        'schedule': 10800.0,  # Every 3 hours
+        'schedule': 10800.0,  # Every 3 hours (3 * 60 * 60 seconds)
     },
-    'fetch_upper_air_data': {
-        'task': 'analysis.upperair_task.fetch_upper_air_data',
-        'schedule': 600.0,  # 
-    },
+    # Upper air data task is disabled until fully implemented
+    # 'fetch_upper_air_data': {
+    #     'task': 'analysis.upperair_task.fetch_upper_air_data',
+    #     'schedule': 10800.0,  # Every 3 hours
+    # },
 }
 
 METEO_STATION_BLOCKS = ['44', '42', '41']  # Configurable station blocks

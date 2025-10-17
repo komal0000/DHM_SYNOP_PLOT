@@ -368,16 +368,25 @@ class ExportMapView(APIView):
             return Response({"message": "Map export started", "map_url": map_url})
         return Response({"error": "Map export failed"}, status=500)
 class ObservationTimesView(APIView):
-    @method_decorator(cache_page(60 * 15))  # Cache for 15 minutes
+    # Temporarily disabled cache to force refresh
+    # @method_decorator(cache_page(60 * 15))  # Cache for 15 minutes
     def get(self, request):
-        """Return distinct observation times for a level."""
+        """Return distinct observation times for a level (last 3 days including today)."""
         level = request.query_params.get('level', 'SURFACE')
         try:
+            # Calculate the date range: today and 2 days before
+            from datetime import datetime, timedelta
+            now = datetime.now(timezone.utc)
+            three_days_ago = now - timedelta(days=2)
+            
             observation_times = (
-                SynopReport.objects.filter(level=level)
+                SynopReport.objects.filter(
+                    level=level,
+                    observation_time__gte=three_days_ago
+                )
                 .values('observation_time')
                 .distinct()
-                .order_by('-observation_time')[:24]
+                .order_by('-observation_time')
             )
             times = [t['observation_time'].isoformat() + 'Z' for t in observation_times]
             return Response(times)
@@ -388,16 +397,25 @@ class ObservationTimesView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 class UpperAirObservationTimesView(APIView):
-    @method_decorator(cache_page(60 * 15))  # Cache for 15 minutes
+    # Temporarily disabled cache to force refresh
+    # @method_decorator(cache_page(60 * 15))  # Cache for 15 minutes
     def get(self, request):
-        """Return distinct observation times for a level."""
+        """Return distinct observation times for a level (last 3 days including today)."""
         level = request.query_params.get('level', '200HPA')
         try:
+            # Calculate the date range: today and 2 days before
+            from datetime import datetime, timedelta
+            now = datetime.now(timezone.utc)
+            three_days_ago = now - timedelta(days=2)
+            
             observation_times = (
-                UpperAirSynopReport.objects.filter(level=level)
+                UpperAirSynopReport.objects.filter(
+                    level=level,
+                    observation_time__gte=three_days_ago
+                )
                 .values('observation_time')
                 .distinct()
-                .order_by('-observation_time')[:24]
+                .order_by('-observation_time')
             )
             times = [t['observation_time'].isoformat() + 'Z' for t in observation_times]
             return Response(times)
