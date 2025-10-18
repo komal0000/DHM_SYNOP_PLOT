@@ -1,6 +1,6 @@
 import requests
 from weather_map.celery import shared_task
-from datetime import datetime, timezone as dt_timezone
+from datetime import datetime, timezone as dt_timezone, timedelta
 from django.utils.timezone import make_aware
 from analysis.models import UpperAirWeatherStation, UpperAirSynopReport
 from bs4 import BeautifulSoup
@@ -130,28 +130,14 @@ def fetch_upper_air_data(self):
     #     '41923': UpperAirWeatherStation.objects.get(station_id="41923")
     # }
 
-    # Use current UTC time for observation (00Z or 12Z)
-    from datetime import datetime, timezone as dt_timezone
+    # Use a 3-day window to include multiple observation times (00Z and 12Z)
     now_utc = datetime.now(dt_timezone.utc)
-    
-    # Upper air soundings are typically at 00Z and 12Z
-    # Round to the nearest valid observation time
-    hour = now_utc.hour
-    if hour < 6:
-        obs_hour = 0
-    elif hour < 18:
-        obs_hour = 12
-    else:
-        obs_hour = 0
-        # If it's past 18Z, we want today's 12Z or tomorrow's 00Z
-        # For simplicity, use today's 12Z
-        from datetime import timedelta
-        if hour >= 18:
-            obs_hour = 12
-    
-    observation_time = now_utc.replace(hour=obs_hour, minute=0, second=0, microsecond=0)
-    
-    logger.info(f"Fetching upper air data for observation time: {observation_time.isoformat()}")
+    start_time = (now_utc - timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0)
+    end_time = now_utc.replace(minute=0, second=0, microsecond=0)
+
+    logger.info(
+        f"Fetching upper air data for stations in range: {start_time.isoformat()} to {end_time.isoformat()} (00Z–12Z)"
+    )
     
     upper_air_url = "https://www.ogimet.com/display_sond.php"
     total_rows = 0
@@ -159,17 +145,20 @@ def fetch_upper_air_data(self):
     for station_id, station in upper_air_station_map.items():
         params = {
             'lang': 'en',
-            'tipo': 'ALL',
+            # Request only TTAA format soundings (parser expects TTAA)
+            'tipo': 'TTAA',
             'ord': 'DIR',
             'nil': 'SI',
             'fmt': 'txt',
-            'ano': observation_time.strftime('%Y'),
-            'mes': observation_time.strftime('%m'),
-            'day': observation_time.strftime('%d'),
+            # 3-day range start (00Z)
+            'ano': start_time.strftime('%Y'),
+            'mes': start_time.strftime('%m'),
+            'day': start_time.strftime('%d'),
             'hora': "00",
-            'anof': observation_time.strftime('%Y'),
-            'mesf': observation_time.strftime('%m'),
-            'dayf': observation_time.strftime('%d'),
+            # 3-day range end (12Z of the last day)
+            'anof': end_time.strftime('%Y'),
+            'mesf': end_time.strftime('%m'),
+            'dayf': end_time.strftime('%d'),
             'horaf': "12",
             'lugar': station_id,
             'send': 'send'
@@ -185,7 +174,9 @@ def fetch_upper_air_data(self):
             response = requests.get(upper_air_url, params=params, timeout=30, headers=headers)
             response.raise_for_status()
 
-            logger.info(f"Fetching upper air data for station {station_id} at {observation_time.isoformat()}")
+            logger.info(
+                f"Fetching upper air data for station {station_id} between {start_time.isoformat()} and {end_time.isoformat()}"
+            )
             soup = BeautifulSoup(response.text, "html.parser")
             pre_tag = soup.find("pre")
             if not pre_tag:
@@ -193,16 +184,19 @@ def fetch_upper_air_data(self):
                 continue
 
             data_text = pre_tag.get_text()
-            reports = data_text.split('=')[:-1]
             upper_air_row_count = 0
 
-            for report in reports:
-                report = report.strip()
-                if not report or report.startswith('#'):
-                    continue  # Skip comments and empty blocks
+            # Robustly extract TTAA message blocks: start with 12-digit timestamp + ' TTAA'
+            import re
+            pattern = re.compile(r"(\d{12}\s+TTAA\b.*?)(?:\n\s*=\s*\n|\Z)", re.S | re.M)
+            ttaa_blocks = pattern.findall(data_text + "\n=\n")
 
-                if 'TTAA' not in report:
-                    logger.debug(f"Skipping non-TTAA report block: starts with {report[:20]!r}")
+            if not ttaa_blocks:
+                logger.debug(f"No TTAA blocks found in response for station {station_id}. First 300 chars: {data_text[:300]!r}")
+
+            for report in ttaa_blocks:
+                report = report.strip()
+                if not report:
                     continue
 
                 parsed_data = parse_ttaa_report(report)
@@ -210,18 +204,31 @@ def fetch_upper_air_data(self):
                     logger.warning(f"Failed to parse TTAA report for station {station_id}")
                     continue
 
+                # Use the actual observation time embedded in the TTAA report
+                parsed_obs_time = parsed_data.get('observation_time')
+                if parsed_obs_time is None:
+                    logger.warning(f"Parsed TTAA missing observation time for station {station_id}")
+                    continue
+
+                # Ensure timezone-aware UTC datetime
+                try:
+                    obs_time_aware = make_aware(parsed_obs_time, dt_timezone.utc) if parsed_obs_time.tzinfo is None else parsed_obs_time
+                except Exception as tz_e:
+                    logger.warning(f"Failed to make observation time timezone-aware: {tz_e}; falling back to naive time")
+                    obs_time_aware = parsed_obs_time
+
                 for level_data in parsed_data['levels']:
                     if UpperAirSynopReport.objects.filter(
                         station=station,
-                        observation_time=observation_time,
+                        observation_time=obs_time_aware,
                         level=level_data['level']
                     ).exists():
-                        logger.debug(f"Report exists for station {station_id} at {observation_time} ({level_data['level']})")
+                        logger.debug(f"Report exists for station {station_id} at {obs_time_aware} ({level_data['level']})")
                         continue
 
                     UpperAirSynopReport.objects.create(
                         station=station,
-                        observation_time=observation_time,
+                        observation_time=obs_time_aware,
                         level=level_data['level'],
                         pressure=level_data['pressure'],
                         temperature=level_data['temperature'],
@@ -230,7 +237,7 @@ def fetch_upper_air_data(self):
                         wind_speed=level_data['wind_speed'],
                         height=level_data['height']
                     )
-                    logger.info(f"Created report for station {station_id} at {observation_time} ({level_data['level']})")
+                    logger.info(f"Created report for station {station_id} at {obs_time_aware} ({level_data['level']})")
                     upper_air_row_count += 1
 
             logger.info(f"Processed {upper_air_row_count} reports for station {station_id}")

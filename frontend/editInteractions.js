@@ -11,7 +11,7 @@ import GeoJSON from 'ol/format/GeoJSON';
 import { LineString } from 'ol/geom';
 import * as turf from '@turf/turf';
 import { transform } from 'ol/proj';
-import { editSource } from './interactionLayers.js'; // Your main editable source
+import { editSource, editLayer } from './interactionLayers.js'; // Your main editable source
 import { saveHistory } from './historyManager.js';
 import { showWarning } from './utils.js';
 
@@ -21,24 +21,53 @@ let eraserInteraction = null;
 
 export function addEditInteraction(map, type) {
   clearAllInteractions(map);
+  
+  // Ensure edit layer is visible so drawn features are shown
+  try {
+    if (editLayer && typeof editLayer.setVisible === 'function') {
+      editLayer.setVisible(true);
+    }
+  } catch (err) {
+    console.warn('Failed to set edit layer visible:', err);
+  }
+  
+  console.log('addEditInteraction called with type:', type);
+  
   drawInteraction = new Draw({
     source: editSource,
     type: type === 'point' ? 'Point' : type === 'line' ? 'LineString' : 'Polygon',
+    // Enable freehand (pencil-like) drawing for lines/polygons - drag to draw
     freehand: type !== 'point',
     style: new Style({
       fill: new Fill({ color: 'rgba(0, 255, 0, 0.2)' }),
-      stroke: new Stroke({ color: '#0000ff', width: 1 }),
+      stroke: new Stroke({ color: '#0000ff', width: 2 }),
     }),
   });
+  
   modifyInteraction = new Modify({
     source: editSource,
     features: editSource.getFeaturesCollection(),
   });
-  drawInteraction.on('drawend', () => saveHistory());
-  modifyInteraction.on('modifyend', () => saveHistory());
+  
+  drawInteraction.on('drawstart', (evt) => {
+    console.log('drawstart event fired for type:', type);
+  });
+  
+  drawInteraction.on('drawend', (evt) => {
+    console.log('drawend event fired for type:', type);
+    saveHistory();
+  });
+  
+  modifyInteraction.on('modifyend', () => {
+    console.log('modifyend event fired');
+    saveHistory();
+  });
+  
   map.addInteraction(drawInteraction);
   map.addInteraction(modifyInteraction);
   map.getTargetElement().style.cursor = 'crosshair';
+  
+  console.log('Draw and modify interactions added to map');
 }
 
 export function addIconInteraction(map, iconType) {

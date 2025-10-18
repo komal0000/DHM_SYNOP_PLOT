@@ -635,7 +635,8 @@
 
   <script src="res/js/create-js.js"></script>
   <script src="res/js/jquery-1.11.0.min.js"></script>
-  <script src="env-config.js"></script>
+  <!-- Load runtime env before main module; served from public/ as /env-config.js -->
+  <script src="/env-config.js"></script>
   <script>
 
     function openForm() {

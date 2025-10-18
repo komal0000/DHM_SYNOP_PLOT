@@ -4,7 +4,7 @@ import Style from 'ol/style/Style';
 import Fill from 'ol/style/Fill';
 import Stroke from 'ol/style/Stroke';
 import { fromLonLat } from 'ol/proj';
-import { config } from './config.js';
+import { config, apiUrl } from './config.js';
 import { editSource, editLayer, measureLayer } from './interactionLayers.js';
 import { saveHistory, undoHistory, redoHistory } from './historyManager.js';
 import { exportMap, copyMapToClipboard, addDragBoxExportInteraction } from './exportInteractions.js';
@@ -63,7 +63,7 @@ export function setupToolbarInteractions(map) {
     }
 
     showSpinner();
-    fetch(`${config.apiBaseUrl}/api/export/`, {
+  fetch(apiUrl('api/export/'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -338,7 +338,7 @@ async function loadExportList() {
     console.log(`Loading exports for dashboard: ${isUpperAirDashboard ? 'Upper Air' : 'Surface'}, filtering by level: ${levelFilter}`);
     
     const normalizedApiBaseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl : `${config.apiBaseUrl}/`;
-    const response = await fetch(`${normalizedApiBaseUrl}api/export-list/?level=${levelFilter}`);
+  const response = await fetch(apiUrl(`api/export-list/?level=${levelFilter}`));
     
     if (!response.ok) {
       throw new Error('Failed to load exports');
@@ -671,7 +671,7 @@ async function deleteExport(exportId) {
   try {
     showSpinner();
     const normalizedApiBaseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl : `${config.apiBaseUrl}/`;
-    const response = await fetch(`${normalizedApiBaseUrl}api/export-delete/${exportId}/`, {
+  const response = await fetch(apiUrl(`api/export-delete/${exportId}/`), {
       method: 'DELETE'
     });
     

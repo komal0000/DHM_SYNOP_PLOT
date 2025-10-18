@@ -2,7 +2,7 @@ import DragBox from 'ol/interaction/DragBox';
 import { jsPDF } from 'jspdf';
 import { platformModifierKeyOnly } from 'ol/events/condition';
 import { showSpinner, hideSpinner, showWarning } from './utils.js';
-import { config } from './config.js';
+import { config, apiUrl } from './config.js';
 
 let dragBoxInteraction = null;
 
@@ -348,12 +348,11 @@ async function savePDFToDatabase(pdfBlob, filename, extent = null) {
     }
 
     // Send to API
-    const normalizedApiBaseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl : `${config.apiBaseUrl}/`;
-    const apiUrl = `${normalizedApiBaseUrl}api/pdf-export/`;
-    console.log('Sending request to:', apiUrl);
+  const apiUrlVar = apiUrl('api/pdf-export/');
+  console.log('Sending request to:', apiUrlVar);
     console.log('FormData keys:', Array.from(formData.keys()));
 
-    const response = await fetch(apiUrl, {
+    const response = await fetch(apiUrlVar, {
       method: 'POST',
       body: formData
     });
@@ -438,12 +437,11 @@ async function saveExportToDatabaseDirect(fileDataUri, filename, format, extent 
     }
 
     // Send to API
-    const normalizedApiBaseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl : `${config.apiBaseUrl}/`;
-    const apiUrl = `${normalizedApiBaseUrl}api/export-file/`;
-    console.log(`Sending ${format} export request to:`, apiUrl);
+  const apiUrlVar = apiUrl('api/export-file/');
+  console.log(`Sending ${format} export request to:`, apiUrlVar);
     console.log('FormData keys:', Array.from(formData.keys()));
 
-    const response = await fetch(apiUrl, {
+    const response = await fetch(apiUrlVar, {
       method: 'POST',
       body: formData
     });

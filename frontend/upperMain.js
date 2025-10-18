@@ -11,7 +11,7 @@ import Stroke from 'ol/style/Stroke';
 import Fill from 'ol/style/Fill';
 import Circle from 'ol/style/Circle';
 import Text from 'ol/style/Text.js';
-import { config, extentLatLon } from './config.js';
+import { config, extentLatLon, apiUrl } from './config.js';
 import {
   baseLayers, grid, stationLayers, upperair_temperatureLayers,
   isobarLayers, isothermLayers, pressureCenterLayers, gridLayers, measureLayers
@@ -19,6 +19,9 @@ import {
 import { addStationsToMap } from './stations.js';
 import { synopObservation } from './uppeAirSynop.js';
 import { createPopup, setupToolbarInteractions } from './interactions.js';
+import { clearMeasureInteractions } from './measureInteractions.js';
+import { editSource, editLayer } from './interactionLayers.js';
+import { clearEditInteractions } from './editInteractions.js';
 import { showSpinner, hideSpinner, showWarning, fetchWithRetry, debounce, getWeatherIcon, getCountryFlag, getPressureTrendClass, getPressureTrendSymbol } from './utils.js';
 import Modify from 'ol/interaction/Modify.js';
 import Select from 'ol/interaction/Select.js';
@@ -114,10 +117,9 @@ function updateLegendObservation(observationTime, level) {
  */
 function loadObservationTimes(level = '850HPA') {
   showSpinner();
-  const normalizedApiBaseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl : `${config.apiBaseUrl}/`;
   const endpoint = getObservationTimesEndpoint(level);
 
-  fetch(`${normalizedApiBaseUrl}api/${endpoint}/?level=${encodeURIComponent(level)}`)
+  fetch(apiUrl(`api/${endpoint}/?level=${encodeURIComponent(level)}`))
     .then(res => {
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       return res.json();
@@ -189,10 +191,8 @@ function loadObservationTimes(level = '850HPA') {
  */
 async function loadAvailableLevels() {
   showSpinner();
-  const normalizedApiBaseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl : `${config.apiBaseUrl}/`;
-
   try {
-    const response = await fetch(`${normalizedApiBaseUrl}api/available-levels/`);
+    const response = await fetch(apiUrl('api/available-levels/'));
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
     const levels = await response.json();
@@ -264,12 +264,24 @@ async function refreshLayers(observationTime, level = '850HPA') {
     pressureCenterLayers.getLayers().clear();
     gridLayers.getLayers().clear();
     weatherReports = [];
+    // Clear any drawn measurements or editable features from previous time
+    try {
+      clearMeasureInteractions(map);
+    } catch (err) {
+      console.warn('Failed to clear measure interactions:', err);
+    }
+    try {
+      // Remove any active edit interactions (draw/modify/eraser)
+      clearEditInteractions(map);
+      editSource.clear();
+        // Keep layer visibility as-is so user can draw immediately
+    } catch (err) {
+      console.warn('Failed to clear edit features or interactions:', err);
+    }
 
     // Normalize apiBaseUrl
-    const normalizedApiBaseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl : `${config.apiBaseUrl}/`;
-
-    // Always fetch upper-air stations
-    const stationsResponse = await fetchWithRetry(`${normalizedApiBaseUrl}api/upperair-stations/`);
+  // Always fetch upper-air stations
+  const stationsResponse = await fetchWithRetry(apiUrl('api/upperair-stations/'));
     const stationData = await stationsResponse.json();
     const stations = Array.isArray(stationData) ? stationData : (stationData.features || []);
     if (stations.length > 0) {
@@ -279,7 +291,7 @@ async function refreshLayers(observationTime, level = '850HPA') {
     }
 
     // Always fetch upper-air reports
-    const reportUrl = `${normalizedApiBaseUrl}api/upperair-reports/?level=${encodeURIComponent(level)}&observation_time=${encodeURIComponent(observationTime)}`;
+  const reportUrl = apiUrl(`api/upperair-reports/?level=${encodeURIComponent(level)}&observation_time=${encodeURIComponent(observationTime)}`);
     console.log(`Fetching reports from: ${reportUrl}`);
     const reportsResponse = await fetchWithRetry(reportUrl);
     const reportData = await reportsResponse.json();
@@ -335,7 +347,7 @@ async function refreshLayers(observationTime, level = '850HPA') {
     };
 
     // Fetch and add isobars
-    const isobarUrl = `${normalizedApiBaseUrl}api/upperair-isobars/?level=${encodeURIComponent(level)}&observation_time=${encodeURIComponent(observationTime)}`;
+  const isobarUrl = apiUrl(`api/upperair-isobars/?level=${encodeURIComponent(level)}&observation_time=${encodeURIComponent(observationTime)}`);
     console.log(`Fetching isobars from: ${isobarUrl}`);
 
     const isobarResponse = await fetchWithRetry(isobarUrl);
@@ -361,7 +373,7 @@ async function refreshLayers(observationTime, level = '850HPA') {
 
 
      // Fetch and add isotherms
-    const isothermUrl = `${config.apiBaseUrl}api/upperair-isotherms/?level=${encodeURIComponent(level)}&observation_time=${encodeURIComponent(observationTime)}`;
+  const isothermUrl = apiUrl(`api/upperair-isotherms/?level=${encodeURIComponent(level)}&observation_time=${encodeURIComponent(observationTime)}`);
     const isothermResponse = await fetchWithRetry(isothermUrl);
     const isothermData = await isothermResponse.json();
     if (isothermData.features?.length > 0) {

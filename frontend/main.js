@@ -11,7 +11,7 @@ import Stroke from 'ol/style/Stroke';
 import Fill from 'ol/style/Fill';
 import Circle from 'ol/style/Circle';
 import Text from 'ol/style/Text.js';
-import { config, extentLatLon } from './config.js';
+import { config, extentLatLon, apiUrl } from './config.js';
 import {
   baseLayers, grid, stationLayers, temperatureLayers,
   isobarLayers, isothermLayers, pressureCenterLayers, gridLayers, measureLayers
@@ -79,9 +79,7 @@ function updateLegendObservationTime(observationTime) {
  */
 function loadObservationTimes() {
   showSpinner();
-  const normalizedApiBaseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl : `${config.apiBaseUrl}/`;
-
-  fetch(`${normalizedApiBaseUrl}api/observation-times/?level=SURFACE`)
+  fetch(apiUrl('api/observation-times/?level=SURFACE'))
     .then(res => {
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       return res.json();
@@ -192,10 +190,8 @@ async function refreshLayers(observationTime) {
     weatherReports = [];
 
     // Normalize apiBaseUrl
-    const normalizedApiBaseUrl = config.apiBaseUrl.endsWith('/') ? config.apiBaseUrl : `${config.apiBaseUrl}/`;
-
-    // Fetch and add stations
-    const stationsResponse = await fetchWithRetry(`${normalizedApiBaseUrl}api/weather-stations/?limit=1000`);
+  // Fetch and add stations
+  const stationsResponse = await fetchWithRetry(apiUrl('api/weather-stations/?limit=1000'));
     const stationData = await stationsResponse.json();
     // Ensure we have an array for stations
     let stations = [];
@@ -216,7 +212,7 @@ async function refreshLayers(observationTime) {
     }
 
     // Fetch and add SYNOP reports
-    const reportUrl = `${normalizedApiBaseUrl}api/reports/?level=SURFACE&observation_time=${encodeURIComponent(observationTime)}&limit=1000`;
+  const reportUrl = apiUrl(`api/reports/?level=SURFACE&observation_time=${encodeURIComponent(observationTime)}&limit=1000`);
     const reportsResponse = await fetchWithRetry(reportUrl);
     const reportData = await reportsResponse.json();
     // Ensure we have an array to work with
@@ -286,7 +282,7 @@ async function refreshLayers(observationTime) {
     };
 
     // Fetch and add isobars
-    const isobarUrl = `${normalizedApiBaseUrl}api/isobars/?level=SURFACE&observation_time=${encodeURIComponent(observationTime)}`;
+  const isobarUrl = apiUrl(`api/isobars/?level=SURFACE&observation_time=${encodeURIComponent(observationTime)}`);
     console.log(`Fetching isobars from: ${isobarUrl}`);
 
     const isobarResponse = await fetchWithRetry(isobarUrl);
@@ -312,7 +308,7 @@ async function refreshLayers(observationTime) {
 
 
      // Fetch and add isotherms
-    const isothermUrl = `${config.apiBaseUrl}api/isotherms/?level=SURFACE&observation_time=${encodeURIComponent(observationTime)}`;
+  const isothermUrl = apiUrl(`api/isotherms/?level=SURFACE&observation_time=${encodeURIComponent(observationTime)}`);
     const isothermResponse = await fetchWithRetry(isothermUrl);
     const isothermData = await isothermResponse.json();
     if (isothermData.features?.length > 0) {
@@ -338,7 +334,7 @@ async function refreshLayers(observationTime) {
     }
 
     // Fetch and add pressure centers
-    const pressureUrl = `${normalizedApiBaseUrl}api/pressure-centers/?level=SURFACE&observation_time=${encodeURIComponent(observationTime)}`;
+  const pressureUrl = apiUrl(`api/pressure-centers/?level=SURFACE&observation_time=${encodeURIComponent(observationTime)}`);
     const pressureResponse = await fetchWithRetry(pressureUrl);
     const pressureData = await pressureResponse.json();
     if (pressureData.features?.length > 0) {
