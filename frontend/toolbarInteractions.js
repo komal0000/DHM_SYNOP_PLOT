@@ -13,10 +13,16 @@ import { addEditInteraction, addIconInteraction, addSignInteraction, addTextBoxI
 import { showSpinner, hideSpinner, showWarning } from './utils.js';
 import {transformExtent} from 'ol/proj';
 
-const exportExtent = transformExtent([50, 0, 100, 40], 'EPSG:4326', 'EPSG:3857');
-console.log('Calling exportMap with extent:', exportExtent);
+// Default export extent for surface map (can be overridden by map's view extent)
+const defaultExportExtent = transformExtent([50, 0, 100, 40], 'EPSG:4326', 'EPSG:3857');
 
 export function setupToolbarInteractions(map) {
+  // Get the map's configured extent from its view, or use default
+  const mapViewExtent = map.getView().get('extent');
+  const exportExtent = mapViewExtent || defaultExportExtent;
+  
+  console.log('setupToolbarInteractions - Using export extent:', exportExtent);
+  
   const selectInteraction = new Select({
     layers: [editLayer],
     style: new Style({
@@ -89,28 +95,34 @@ export function setupToolbarInteractions(map) {
   });
 
   document.querySelector('.export-jpeg')?.addEventListener('click', () => {
-    exportMap(map, 'jpeg', 'weather_map',exportExtent);
+    // Export without extent to capture the entire current canvas/viewport
+    exportMap(map, 'jpeg', 'weather_map');
   });
 
   document.querySelector('.export-png')?.addEventListener('click', () => {
-    exportMap(map, 'png', 'weather_map',exportExtent);
+    // Export without extent to capture the entire current canvas/viewport
+    exportMap(map, 'png', 'weather_map');
   });
 
   document.querySelector('.export-pdf')?.addEventListener('click', () => {
-    exportMap(map, 'pdf', 'weather_map',exportExtent);
+    // Export without extent to capture the entire current canvas/viewport
+    exportMap(map, 'pdf', 'weather_map');
   });
 
   // Upper Air Map Export Buttons
   document.querySelector('.export-upper-jpeg')?.addEventListener('click', () => {
-    exportMap(map, 'jpeg', 'upper_air_map', exportExtent);
+    // Export without extent to capture the entire current canvas/viewport
+    exportMap(map, 'jpeg', 'upper_air_map');
   });
 
   document.querySelector('.export-upper-png')?.addEventListener('click', () => {
-    exportMap(map, 'png', 'upper_air_map', exportExtent);
+    // Export without extent to capture the entire current canvas/viewport
+    exportMap(map, 'png', 'upper_air_map');
   });
 
   document.querySelector('.export-upper-pdf')?.addEventListener('click', () => {
-    exportMap(map, 'pdf', 'upper_air_map', exportExtent);
+    // Export without extent to capture the entire current canvas/viewport
+    exportMap(map, 'pdf', 'upper_air_map');
   });
 
   document.querySelector('.export-upper-area')?.addEventListener('click', () => {

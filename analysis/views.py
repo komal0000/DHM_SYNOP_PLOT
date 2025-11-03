@@ -404,20 +404,20 @@ class UpperAirObservationTimesView(APIView):
     # Temporarily disabled cache to force refresh
     # @method_decorator(cache_page(60 * 15))  # Cache for 15 minutes
     def get(self, request):
-        """Return distinct observation times for a level (last 3 days including today)."""
+        """Return distinct observation times for a level (last 30 days including today)."""
         level = request.query_params.get('level', '200HPA')
         try:
-            # Calculate the date range: last 7 days to ensure we get data
+            # Calculate the date range: last 30 days (1 month) to ensure we get upper air data
             from datetime import timedelta
             now = datetime.now(timezone.utc)  # Use timezone-aware datetime
-            seven_days_ago = now - timedelta(days=7)
+            thirty_days_ago = now - timedelta(days=30)
             
-            logger.info(f"Fetching upper air observation times for level={level}, from {seven_days_ago} to {now}")
+            logger.info(f"Fetching upper air observation times for level={level}, from {thirty_days_ago} to {now}")
             
             observation_times = (
                 UpperAirSynopReport.objects.filter(
                     level=level,
-                    observation_time__gte=seven_days_ago
+                    observation_time__gte=thirty_days_ago
                 )
                 .values('observation_time')
                 .distinct()

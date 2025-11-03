@@ -5,6 +5,10 @@ from django.utils.timezone import make_aware
 from analysis.models import UpperAirWeatherStation, UpperAirSynopReport
 from bs4 import BeautifulSoup
 import logging
+import urllib3
+
+# Disable SSL warnings when verify=False is used
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
@@ -130,14 +134,15 @@ def fetch_upper_air_data(self):
     #     '41923': UpperAirWeatherStation.objects.get(station_id="41923")
     # }
 
-    # Use a 3-day window to include multiple observation times (00Z and 12Z)
+    # Use a 30-day window (1 month) to include multiple observation times (00Z and 12Z)
     now_utc = datetime.now(dt_timezone.utc)
-    start_time = (now_utc - timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0)
+    start_time = (now_utc - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0)
     end_time = now_utc.replace(minute=0, second=0, microsecond=0)
 
     logger.info(
-        f"Fetching upper air data for stations in range: {start_time.isoformat()} to {end_time.isoformat()} (00Z–12Z)"
+        f"Fetching upper air data for stations in range: {start_time.isoformat()} to {end_time.isoformat()} (last 30 days)"
     )
+
     
     upper_air_url = "https://www.ogimet.com/display_sond.php"
     total_rows = 0
@@ -171,7 +176,8 @@ def fetch_upper_air_data(self):
         }
 
         try:
-            response = requests.get(upper_air_url, params=params, timeout=30, headers=headers)
+            # Disable SSL verification to handle certificate date issues
+            response = requests.get(upper_air_url, params=params, timeout=30, headers=headers, verify=False)
             response.raise_for_status()
 
             logger.info(
