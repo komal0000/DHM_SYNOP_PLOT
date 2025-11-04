@@ -150,7 +150,7 @@ export function addEraserInteraction(map) {
   clearAllInteractions(map);
 
   const tempSource = new VectorSource();
-  const brushRadius = 30; // Pixel radius for eraser brush (adjustable)
+  const brushRadius = 5; // Reduced pixel radius for precise erasing
 
   eraserInteraction = new Draw({
     source: tempSource,
@@ -158,9 +158,9 @@ export function addEraserInteraction(map) {
     freehand: true,
     style: new Style({
       stroke: new Stroke({
-        color: 'rgba(255, 0, 0, 0.6)',
-        width: brushRadius / 2,
-        lineDash: [10, 5]
+        color: 'rgba(255, 0, 0, 0.8)',
+        width: 4, // Visual indicator width
+        lineDash: [8, 4]
       }),
     }),
   });
@@ -386,38 +386,59 @@ function cutLineString(lineCoords, eraserCoords, brushRadius, map) {
   const resolution = view.getResolution();
   const brushDistance = brushRadius * resolution;
   
-  const segments = [];
-  let currentSegment = [];
+  // Mark which points should be cut based on proximity to eraser path
+  const cutMarks = new Array(lineCoords.length).fill(false);
   
   for (let i = 0; i < lineCoords.length; i++) {
     const point = lineCoords[i];
-    let shouldCut = false;
     
-    // Check if this point is close to any eraser point
-    for (let eraserPoint of eraserCoords) {
-      const distance = Math.sqrt(
-        Math.pow(point[0] - eraserPoint[0], 2) +
-        Math.pow(point[1] - eraserPoint[1], 2)
-      );
+    // Check distance to each segment of the eraser path
+    for (let j = 0; j < eraserCoords.length - 1; j++) {
+      const eraserStart = eraserCoords[j];
+      const eraserEnd = eraserCoords[j + 1];
+      
+      // Calculate distance from point to eraser line segment
+      const distance = pointToLineDistance(point, eraserStart, eraserEnd);
+      
       if (distance < brushDistance) {
-        shouldCut = true;
+        cutMarks[i] = true;
         break;
       }
     }
     
-    if (shouldCut) {
-      // End current segment if it has points
+    // Also check distance to individual eraser points (for single clicks)
+    if (!cutMarks[i]) {
+      for (let eraserPoint of eraserCoords) {
+        const distance = Math.sqrt(
+          Math.pow(point[0] - eraserPoint[0], 2) +
+          Math.pow(point[1] - eraserPoint[1], 2)
+        );
+        if (distance < brushDistance) {
+          cutMarks[i] = true;
+          break;
+        }
+      }
+    }
+  }
+  
+  // Build segments from unmarked points
+  const segments = [];
+  let currentSegment = [];
+  
+  for (let i = 0; i < lineCoords.length; i++) {
+    if (cutMarks[i]) {
+      // This point should be cut - end current segment
       if (currentSegment.length >= 2) {
         segments.push([...currentSegment]);
       }
       currentSegment = [];
     } else {
-      // Add point to current segment
-      currentSegment.push(point);
+      // Keep this point
+      currentSegment.push(lineCoords[i]);
     }
   }
   
-  // Add final segment if it has points
+  // Add final segment if it has enough points
   if (currentSegment.length >= 2) {
     segments.push(currentSegment);
   }
