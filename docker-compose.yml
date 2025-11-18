@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  geoserver:
+    image: kartoza/geoserver:2.23.0
+    container_name: weather_geoserver
+    environment:
+      GEOSERVER_ADMIN_USER: admin
+      GEOSERVER_ADMIN_PASSWORD: geoserver
+      INITIAL_MEMORY: 2G
+      MAXIMUM_MEMORY: 4G
+    ports:
+      - "8080:8080"
+    volumes:
+      - geoserver_data:/opt/geoserver/data_dir
+    # Remove depends_on since we're using external DB
+    networks:
+      - weather_network
+    restart: unless-stopped
+    # Add this to allow connection to host machine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  geoserver_data:
+
+networks:
+  weather_network:
+    driver: bridge

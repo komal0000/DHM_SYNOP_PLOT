@@ -21,7 +21,7 @@ export const nepal = new TileLayer({
   visible: false,
   source: new TileWMS({
     url: config.geoserverUrl,
-    params: { 'LAYERS': 'DHM:province', 'TILED': true },
+    params: { 'LAYERS': 'NepalAdmin:province', 'TILED': true },
     serverType: 'geoserver',
     crossOrigin: 'anonymous',
   })
@@ -33,7 +33,7 @@ export const bhutan = new TileLayer({
   visible: false,
   source: new TileWMS({
     url: config.geoserverUrl,
-    params: { 'LAYERS': 'DHM:BTN_adm1', 'TILED': true },
+    params: { 'LAYERS': 'NepalAdmin:btn_adm1', 'TILED': true },
     serverType: 'geoserver',
     crossOrigin: 'anonymous'
   })
@@ -44,7 +44,7 @@ export const indiaState = new TileLayer({
   visible: false,
   source: new TileWMS({
     url: config.geoserverUrl,
-    params: { 'LAYERS': 'DHM:IND_adm1', 'TILED': true },
+    params: { 'LAYERS': 'NepalAdmin:ind_adm1', 'TILED': true },
     serverType: 'geoserver',
     crossOrigin: 'anonymous'
   })
@@ -54,7 +54,7 @@ export const srilanka = new TileLayer({
   visible: false,
   source: new TileWMS({
     url: config.geoserverUrl,
-    params: { 'LAYERS': 'DHM:LKA_adm0', 'TILED': true },
+    params: { 'LAYERS': 'NepalAdmin:lka_adm0', 'TILED': true },
     serverType: 'geoserver',
     crossOrigin: 'anonymous'
   })
@@ -65,7 +65,7 @@ export const bangladesh = new TileLayer({
   visible: false,
   source: new TileWMS({
     url: config.geoserverUrl,
-    params: { 'LAYERS': 'DHM:BGD_adm1', 'TILED': true },
+    params: { 'LAYERS': 'NepalAdmin:bgd_adm1', 'TILED': true },
     serverType: 'geoserver',
     crossOrigin: 'anonymous'
   })
@@ -76,7 +76,7 @@ export const china = new TileLayer({
   visible: false,
   source: new TileWMS({
     url: config.geoserverUrl,
-    params: { 'LAYERS': 'DHM:CHN_adm1', 'TILED': true },
+    params: { 'LAYERS': 'NepalAdmin:chn_adm1', 'TILED': true },
     serverType: 'geoserver',
     crossOrigin: 'anonymous'
   })
@@ -87,7 +87,7 @@ export const pakistan = new TileLayer({
   visible: false,
   source: new TileWMS({
     url: config.geoserverUrl,
-    params: { 'LAYERS': 'DHM:PAK_adm1', 'TILED': true },
+    params: { 'LAYERS': 'NepalAdmin:pak_adm1', 'TILED': true },
     serverType: 'geoserver',
     crossOrigin: 'anonymous'
   })

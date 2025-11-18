@@ -15,7 +15,7 @@ export const config = {
   // Use relative path by default to leverage Vite's proxy in dev
   geoserverUrl: (typeof window !== 'undefined' && window._env_ && window._env_.GEOSERVER_URL)
     ? window._env_.GEOSERVER_URL
-    : '/geoserver/NepalAdmin/wms'
+    : '/geoserver-proxy/NepalAdmin/wms'
 };
 
 export function apiUrl(path = '') {
