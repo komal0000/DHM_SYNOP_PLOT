@@ -154,3 +154,17 @@ If you want to test immediately without downloading:
 1. Comment out all boundary layers in `frontend/layers.js` (already done)
 2. Use only OSM base layer
 3. Your weather data layers will still work
+sudo -E ./import.sh ~/boundries/gadm41_NPL_shp/gadm41_NPL_1.shp province
+
+sudo -E ./import.sh ~/boundries/gadm41_IND_shp/gadm41_IND_1.shp ind_adm1
+
+sudo -E ./import.sh ~/boundries/gadm41_PAK_shp/gadm41_PAK_1.shp pak_adm1
+
+sudo -E ./import.sh ~/boundries/gadm41_BGD_shp/gadm41_BGD_1.shp bgd_adm1
+
+sudo -E ./import.sh ~/boundries/gadm41_CHN_shp/gadm41_CHN_1.shp chn_adm1
+
+sudo -E ./import.sh ~/boundries/gadm41_BTN_shp/gadm41_BTN_1.shp btn_adm1
+
+sudo -E ./import.sh ~/boundries/gadm41_LKA_shp/gadm41_LKA_1.shp lka_adm1
+
