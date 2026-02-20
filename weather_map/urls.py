@@ -11,5 +11,5 @@ urlpatterns = [
 
 
 urlpatterns += [
-    path('', TemplateView.as_view(template_name='index.html')),
+    path('anaysis/', TemplateView.as_view(template_name='index.html')),
 ]

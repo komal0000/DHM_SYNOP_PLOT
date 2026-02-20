@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  geoserver:
+    image: kartoza/geoserver:2.23.0
+    container_name: weather_geoserver
+    environment:
+      GEOSERVER_ADMIN_USER: admin
+      GEOSERVER_ADMIN_PASSWORD: geoserver
+      INITIAL_MEMORY: 2G
+      MAXIMUM_MEMORY: 4G
+      CORS_ENABLED: "true"                    # Add this
+      CORS_ALLOWED_ORIGINS: "*"               # Add this
+      CORS_ALLOWED_METHODS: "GET,POST,PUT,DELETE,HEAD,OPTIONS"  # Add this
+      CORS_ALLOWED_HEADERS: "*"               # Add this
+    ports:
+      - "8081:8081"
+    volumes:
+      - geoserver_data:/opt/geoserver/data_dir
+    networks:
+      - weather_network
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  geoserver_data:
+
+networks:
+  weather_network:
+    driver: bridge

@@ -1,65 +1,78 @@
-"""
-GeoServer Proxy View to handle CORS issues
-"""
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.views import View
 import requests
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(_name_)
 
 class GeoServerProxy(View):
-    """Proxy requests to GeoServer to avoid CORS issues"""
+    GEOSERVER_BASE_URL = "http://10.20.0.166:8081/geoserver-proxy"
     
-    GEOSERVER_BASE_URL = "http://localhost:8080/geoserver"
-    
-    def get(self, request):
-        """Forward GET requests to GeoServer with CORS headers"""
+    def get(self, request, wms_path):
         try:
-            # Build the full URL with query parameters
-            path = request.GET.get('path', '')
-            query_string = request.META.get('QUERY_STRING', '')
+            # Get query parameters
+            params = request.GET.dict()
             
-            # Remove 'path=' from query string if present
-            if 'path=' in query_string:
-                query_parts = query_string.split('&')
-                query_parts = [p for p in query_parts if not p.startswith('path=')]
-                query_string = '&'.join(query_parts)
+            # Build the full GeoServer URL
+            geoserver_url = f"{self.GEOSERVER_BASE_URL}/{wms_path}"
             
-            url = f"{self.GEOSERVER_BASE_URL}/{path}"
-            if query_string:
-                url = f"{url}?{query_string}"
+            # Log the request for debugging
+            logger.info(f"Proxying to GeoServer: {geoserver_url}")
+            logger.info(f"Query params: {params}")
             
-            logger.info(f"Proxying request to: {url}")
+            # Make request to GeoServer
+            response = requests.get(geoserver_url, params=params, timeout=30)
             
-            # Forward request to GeoServer
-            response = requests.get(url, timeout=30)
+            # Log response status
+            logger.info(f"GeoServer response status: {response.status_code}")
             
-            # Create Django response with GeoServer content
+            # If GeoServer returned an error, log it
+            if response.status_code >= 400:
+                logger.error(f"GeoServer error response: {response.text[:500]}")
+            
+            # Get content type
+            content_type = response.headers.get("Content-Type") or "application/octet-stream"
+            
+            # Create Django response
             django_response = HttpResponse(
-                content=response.content,
+                response.content,
                 status=response.status_code,
-                content_type=response.headers.get('Content-Type', 'image/png')
+                content_type=content_type
             )
             
             # Add CORS headers
-            django_response['Access-Control-Allow-Origin'] = '*'
-            django_response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
-            django_response['Access-Control-Allow-Headers'] = 'Content-Type'
+            django_response["Access-Control-Allow-Origin"] = "*"
+            django_response["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+            django_response["Access-Control-Allow-Headers"] = "Content-Type"
             
             return django_response
             
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error proxying GeoServer request: {e}")
-            return HttpResponse(
-                content=f"Error connecting to GeoServer: {str(e)}",
-                status=502
-            )
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"Cannot connect to GeoServer: {str(e)}")
+            return JsonResponse({
+                'error': 'Cannot connect to GeoServer',
+                'details': str(e),
+                'geoserver_url': self.GEOSERVER_BASE_URL
+            }, status=502)
+            
+        except requests.exceptions.Timeout as e:
+            logger.error(f"GeoServer request timeout: {str(e)}")
+            return JsonResponse({
+                'error': 'GeoServer request timeout',
+                'details': str(e)
+            }, status=504)
+            
+        except Exception as e:
+            logger.error(f"GeoServer proxy error: {str(e)}", exc_info=True)
+            return JsonResponse({
+                'error': 'GeoServer proxy error',
+                'details': str(e)
+            }, status=500)
     
-    def options(self, request):
-        """Handle preflight OPTIONS requests"""
+    def options(self, request, wms_path):
+        """Handle OPTIONS request for CORS preflight"""
         response = HttpResponse()
-        response['Access-Control-Allow-Origin'] = '*'
-        response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
-        response['Access-Control-Allow-Headers'] = 'Content-Type'
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type"
         return response
