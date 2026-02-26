@@ -18,6 +18,10 @@ import { showWarning } from './utils.js';
 let drawInteraction = null;
 let modifyInteraction = null;
 let eraserInteraction = null;
+let isobarModifyInteraction = null;
+
+// Registry for additional sources the eraser should also erase from (e.g. isobar sources)
+let extraEraserSources = [];
 
 export function addEditInteraction(map, type) {
   clearAllInteractions(map);
@@ -145,6 +149,52 @@ export function addTextBoxInteraction(map) {
   map.getTargetElement().style.cursor = 'crosshair';
 }
 
+/**
+ * Register additional VectorSources that the eraser should also operate on.
+ * Call this after loading isobar/isotherm data so the eraser can erase from those sources too.
+ */
+export function registerEraserSources(sources) {
+  extraEraserSources = Array.isArray(sources) ? sources : [sources];
+}
+
+/**
+ * Clear any registered extra eraser sources (call on layer refresh/clear).
+ */
+export function clearEraserSources() {
+  extraEraserSources = [];
+}
+
+/**
+ * Add a Modify interaction on an isobar source so users can drag/reshape isobar lines.
+ * Returns the interaction so the caller can remove it later.
+ */
+export function addIsobarModifyInteraction(map, isobarSource) {
+  // Remove any previous isobar modify interaction
+  removeIsobarModifyInteraction(map);
+
+  isobarModifyInteraction = new Modify({
+    source: isobarSource,
+  });
+
+  isobarModifyInteraction.on('modifyend', () => {
+    console.log('Isobar modified');
+  });
+
+  map.addInteraction(isobarModifyInteraction);
+  console.log('Isobar modify interaction added');
+  return isobarModifyInteraction;
+}
+
+/**
+ * Remove the isobar modify interaction from the map.
+ */
+export function removeIsobarModifyInteraction(map) {
+  if (isobarModifyInteraction) {
+    map.removeInteraction(isobarModifyInteraction);
+    isobarModifyInteraction = null;
+  }
+}
+
 export function addEraserInteraction(map) {
   console.log('=== ERASER INTERACTION STARTED ===');
   clearAllInteractions(map);
@@ -171,11 +221,13 @@ export function addEraserInteraction(map) {
     console.log('=== ERASER DRAWSTART ===');
     eraserPath = [];
     
-    const featuresCount = editSource.getFeatures().length;
-    console.log('Features available to erase:', featuresCount);
+    const editCount = editSource.getFeatures().length;
+    const extraCount = extraEraserSources.reduce((sum, src) => sum + src.getFeatures().length, 0);
+    const featuresCount = editCount + extraCount;
+    console.log('Features available to erase:', featuresCount, '(edit:', editCount, ', extra:', extraCount, ')');
     
     if (featuresCount === 0) {
-      showWarning('No drawn features found to erase.', false);
+      showWarning('No features found to erase.', false);
       return;
     }
   });
@@ -197,67 +249,63 @@ export function addEraserInteraction(map) {
     console.log('Eraser path coordinates:', eraserCoords);
     
     try {
-      // Get all features from editSource
-      const features = editSource.getFeatures().slice(); // Make a copy
-      console.log('Processing', features.length, 'features');
-      
-      if (features.length === 0) {
-        showWarning('No features found in edit layer to erase.', false);
-        return;
-      }
+      // Gather features from editSource AND any registered extra sources (e.g. isobar)
+      const allSourcesToErase = [editSource, ...extraEraserSources];
       
       let erasedCount = 0;
       let processedCount = 0;
-      
-      features.forEach((feature, index) => {
-        try {
-          const featureGeometry = feature.getGeometry();
-          const featureType = featureGeometry.getType();
+
+      allSourcesToErase.forEach((source) => {
+        const features = source.getFeatures().slice(); // Make a copy
+        
+        features.forEach((feature, index) => {
+          try {
+            const featureGeometry = feature.getGeometry();
+            const featureType = featureGeometry.getType();
           
-          console.log(`Processing feature ${index}: type=${featureType}`);
+            // Check if eraser path intersects with feature
+            let shouldErase = false;
           
-          // Check if eraser path intersects with feature
-          let shouldErase = false;
-          
-          if (featureType === 'LineString') {
-            shouldErase = checkLineStringIntersection(eraserCoords, featureGeometry.getCoordinates(), brushRadius, map);
-          } else if (featureType === 'Point') {
-            shouldErase = checkPointIntersection(eraserCoords, featureGeometry.getCoordinates(), brushRadius, map);
-          } else if (featureType === 'Polygon') {
-            shouldErase = checkPolygonIntersection(eraserCoords, featureGeometry.getCoordinates(), brushRadius, map);
-          }
-          
-          if (shouldErase) {
-            console.log(`Feature ${index} intersects with eraser - attempting partial erase`);
-            
             if (featureType === 'LineString') {
-              // For LineStrings, try to cut them where they intersect with the eraser
-              const remainingSegments = cutLineString(featureGeometry.getCoordinates(), eraserCoords, brushRadius, map);
-              
-              // Remove original feature
-              editSource.removeFeature(feature);
-              
-              // Add remaining segments as new features
-              remainingSegments.forEach(segment => {
-                if (segment.length >= 2) {
-                  const newFeature = feature.clone();
-                  newFeature.setGeometry(new LineString(segment));
-                  editSource.addFeature(newFeature);
-                }
-              });
-              
-              erasedCount++;
-            } else {
-              // For Points and Polygons, remove completely if intersected
-              editSource.removeFeature(feature);
-              erasedCount++;
+              shouldErase = checkLineStringIntersection(eraserCoords, featureGeometry.getCoordinates(), brushRadius, map);
+            } else if (featureType === 'Point') {
+              shouldErase = checkPointIntersection(eraserCoords, featureGeometry.getCoordinates(), brushRadius, map);
+            } else if (featureType === 'Polygon') {
+              shouldErase = checkPolygonIntersection(eraserCoords, featureGeometry.getCoordinates(), brushRadius, map);
             }
-          }
           
-          processedCount++;
-        } catch (error) {
-          console.error(`Error processing feature ${index}:`, error);
-        }
+            if (shouldErase) {
+              console.log(`Feature intersects with eraser - attempting partial erase`);
+            
+              if (featureType === 'LineString') {
+                // For LineStrings, try to cut them where they intersect with the eraser
+                const remainingSegments = cutLineString(featureGeometry.getCoordinates(), eraserCoords, brushRadius, map);
+              
+                // Remove original feature
+                source.removeFeature(feature);
+              
+                // Add remaining segments as new features
+                remainingSegments.forEach(segment => {
+                  if (segment.length >= 2) {
+                    const newFeature = feature.clone();
+                    newFeature.setGeometry(new LineString(segment));
+                    source.addFeature(newFeature);
+                  }
+                });
+              
+                erasedCount++;
+              } else {
+                // For Points and Polygons, remove completely if intersected
+                source.removeFeature(feature);
+                erasedCount++;
+              }
+            }
+          
+            processedCount++;
+          } catch (error) {
+            console.error(`Error processing feature:`, error);
+          }
+        });
       });
       
       console.log(`Processed ${processedCount} features, erased parts of ${erasedCount} features`);

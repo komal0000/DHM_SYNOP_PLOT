@@ -1,6 +1,7 @@
 // stations.js
 import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
+import LayerGroup from 'ol/layer/Group';
 import { Point } from 'ol/geom';
 import Style from 'ol/style/Style';
 import Circle from 'ol/style/Circle';
@@ -12,10 +13,9 @@ import { showWarning } from './utils.js';
 import { stationLayers } from './layers.js';
 
 export function addStationsToMap(stations) {
-  const vectorSource = new VectorSource();
+  // Group stations by country
+  const countryMap = {};
   let validStations = 0;
-
-//   console.log('Stations received:', stations);
 
   stations.forEach(station => {
     let coordinates = [85.324, 27.6172];
@@ -30,41 +30,68 @@ export function addStationsToMap(stations) {
       console.warn(`Invalid geometry for station "${station.name}":`, station.geometry);
     }
 
+    const country = station.properties?.country || station.country || 'Unknown';
+
     const point = new Point(fromLonLat(coordinates));
     const feature = new Feature({
       geometry: point,
       name: station.properties?.name || station.name || 'Unknown',
       elevation: station.properties?.elevation || station.elevation || 'N/A',
-      country: station.properties?.country || station.country || 'N/A',
-      coordinates: coordinates
+      country: country,
+      coordinates: coordinates,
+      isStation: true  // marker so popup handler can identify station features
     });
 
-    vectorSource.addFeature(feature);
+    if (!countryMap[country]) {
+      countryMap[country] = [];
+    }
+    countryMap[country].push(feature);
     validStations++;
   });
 
   if (validStations === 0) {
     showWarning('No valid weather stations found.', true);
-  } else {
-    console.log(`Added ${validStations} stations to the map`);
+    return;
   }
 
-  const vectorLayer = new VectorLayer({
-    title: 'Weather Stations',
-    source: vectorSource,
-    zIndex: 1000, // Ensure high z-index
-    visible: false, // Ensure layer is visible
-    style: new Style({
-      image: new Circle({
-        radius: 4, // Larger for visibility
-        fill: new Fill({ color: 'rgba(47, 0, 255, 0.8)' }),
-        stroke: new Stroke({ color: 'orange', width: 2 })
-      })
+  console.log(`Added ${validStations} stations across ${Object.keys(countryMap).length} countries`);
+
+  // Create a VectorLayer per country
+  const stationStyle = new Style({
+    image: new Circle({
+      radius: 4,
+      fill: new Fill({ color: 'rgba(47, 0, 255, 0.8)' }),
+      stroke: new Stroke({ color: 'orange', width: 2 })
     })
   });
 
-  stationLayers.getLayers().push(vectorLayer);
-//   console.log('Station layer added to stationLayers:', vectorLayer);
-  // Force map update
-  vectorLayer.getSource().changed();
+  // Sort countries alphabetically, but put Nepal first
+  const countries = Object.keys(countryMap).sort((a, b) => {
+    if (a === 'Nepal') return -1;
+    if (b === 'Nepal') return 1;
+    return a.localeCompare(b);
+  });
+
+  const countryLayers = countries.map(country => {
+    const source = new VectorSource({ features: countryMap[country] });
+    return new VectorLayer({
+      title: country,
+      source: source,
+      zIndex: 1000,
+      visible: false,
+      style: stationStyle
+    });
+  });
+
+  // Wrap all country layers in a "Weather Stations" group
+  const stationsGroup = new LayerGroup({
+    title: 'Weather Stations',
+    openInLayerSwitcher: true,
+    layers: countryLayers
+  });
+
+  stationLayers.getLayers().push(stationsGroup);
+
+  // Force update
+  countryLayers.forEach(l => l.getSource().changed());
 };

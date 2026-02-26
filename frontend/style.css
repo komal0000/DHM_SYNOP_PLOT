@@ -7,68 +7,135 @@ body {
   height: 100%;
   width: 100%;
   box-sizing: border-box;
+  font-family: "Georgia", "Times New Roman", Times, serif;
 }
 
+/* ===== LAYOUT CONTAINER ===== */
 .container {
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
   width: 100%;
-  display: grid;
-  grid-template-columns: 85.42px 1fr;
-  grid-template-rows: 67px 1fr;
 }
 
+/* ===== LOGO ===== */
 #logo {
-  height: 60px;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 50px;
+  height: auto;
+  z-index: 1001;
   padding: 3px;
 }
 
-/* Toolbar */
-/* .toolbar { */
-/* display: flex; */
-/* justify-content: space-between; */
-/* background: #f0f0f0; */
-/* padding: 10px; */
-/* border-bottom: 1px solid #ccc; */
-/* z-index: 1000; */
-/* } */
-/* .toolbar-child { */
-  /* display: flex; */
-  /* align-items: center; */
-  /* gap: 10px; */
-/* } */
-/* css edited by shruti statrs from here */
-/* .toolbar-items { */
-  /* display: flex; */
-  /* align-items: center; */
-  /* gap: 6px; */
-  /* background: #fff; */
-  /* padding: 5px; */
-  /* border-radius: 4px; */
-  /* box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); */
-/* } */
-/* .toolbar-items .item { */
-  /* cursor: pointer; */
-  /* padding: 4px; */
-  /* display: inline-flex; */
-  /* border-radius: 3px; */
-  /* transition: background 0.2s; */
-/* } */
-.toolbar-items .item:hover:not(:last-child) {
+/* ===== TOOLBAR SHELL ===== */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  background: #f0f0f0;
+  border-bottom: 1px solid #ccc;
+  z-index: 1000;
+}
+
+/* ===== TOOLBAR ROWS ===== */
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 6px 15px;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+/* Row 1: clear the logo */
+.toolbar-row:first-child {
+  padding-left: 70px;
+}
+
+/* Row 2: subtle top border */
+.toolbar-row:last-child {
+  padding-left: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Invisible scrollbar but still scrollable */
+.toolbar-row::-webkit-scrollbar {
+  height: 0;
+}
+
+/* ===== ROW-1 CHILDREN (two flex groups) ===== */
+.toolbar-child {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+
+/* Push the last child (export icon) to far right */
+.toolbar-child:last-child {
+  margin-left: auto;
+}
+
+/* ===== TOOLBAR ITEM GROUPS (white pill containers) ===== */
+.toolbar-items {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+/* Individual clickable icons */
+.toolbar-items .item {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-items .item:hover {
   background: #e0e0e0;
 }
+
 .toolbar-items .item img {
   width: 20px;
   height: 20px;
+  display: block;
 }
-/* css edited by shruti ends here */
-/* added by shruti */
+
+/* ===== OBSERVATION TIME SELECT ===== */
+#observation-time,
+#pressure-level {
+  min-width: 220px;
+  height: 30px;
+  padding: 2px 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 13px;
+  font-family: "Georgia", "Times New Roman", Times, serif;
+  background: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ===== CUSTOM SELECT (Shruti) ===== */
 .custom-select {
   position: relative;
   min-width: 250px;
 }
 .custom-select select {
-  /* appearance: none; */
-  /* -webkit-appearance: none; */
   background-color: #fff;
   width: 100%;
   padding: 10px 6px;
@@ -80,100 +147,85 @@ body {
 .custom-select select:focus {
   outline: none;
 }
-.toolbar {
-  grid-column-start: 2;
-  background-color: white;
-  border-bottom: 1px solid #ccc;
-  border-radius: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-}
 
-.toolbar-child {
-  display: flex;
-  align-items: center;
-  width: 90%;
-  justify-content: flex-start;
-  gap: 10px;
-}
-
-.toolbar-items {
-  display: flex;
-  margin: 5px;
-  border: 1px solid rgba(0, 0, 0, 0.233);
-  align-items: center;
-  gap: 6px;
-  background: #fff;
-  padding: 5px;
-  border-radius: 4px;
-}
-/*  */
-.item {
-  padding: 4px;
-  cursor: pointer;
-  display: inline-flex;
-  border-radius: 3px;
-  transition: background 0.2s;
-}
-/*  */
-/* .item img { */
-/* width: 24px; */
-/* height: 24px; */
-/* } */
-
-#observation-time {
-  padding: 4px 8px;
-  border: none;
-  /*  background: #f1f1f1; */
-  background: transparent;
-  border-radius: 4px;
-}
-
-/* Menubar */
+/* ===== ROW-2 MENUBAR ===== */
 .menubar {
-  grid-row-start: 2;
-  grid-row-end: 3;
-  background-color: white;
-  border-right: #e7e7e7 3px solid;
-  border-radius: 10px;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-
-.menu-item {
-  display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  padding: 15px;
-  cursor: pointer;
-  border-bottom: #e7e7e7 1px solid;
-  transition: background-color 0.2s ease-in-out;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  padding: 4px 8px;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 
-.menu-item:hover {
-  background-color: #f5f5f5;
+/* ===== MENU-ITEM (buttons inside menubar) ===== */
+.menu-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: bold;
+  font-family: "Georgia", "Times New Roman", Times, serif;
+}
+
+/* ===== SHARED BUTTON STYLE ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  outline: none;
+  padding: 0 12px;
+  background-color: #f1f1f1;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  font-family: "Georgia", "Times New Roman", Times, serif;
+  border-radius: 3px;
+  height: 30px;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.btn:hover {
+  background-color: #e0e0e0;
+}
+
+/* Active/hover inside the menubar → red highlight */
+.menubar .btn.active,
+.menubar .btn:hover {
+  background-color: #ff3636;
+  color: white;
 }
 
 /* Content */
 .content {
-  grid-column-start: 2;
-  grid-row-start: 2;
+  flex: 1;
   position: relative;
+  overflow: hidden;
 }
 
 #map {
   position: absolute;
   top: 0;
   bottom: 0;
+  left: 0;
+  right: 0;
   width: 100%;
+  height: 100%;
 }
 
 .layerpanel {
   width: 250px;
-  height: 70vh;
   background-color: rgba(0, 0, 0, 0.743);
   position: relative;
   top: 10%;
@@ -183,6 +235,51 @@ body {
   color: white;
   padding: 10px;
   overflow-y: auto;
+  max-height: 70vh;
+}
+
+/* When collapsed, hide everything except the header */
+.layerpanel.panel-collapsed {
+  overflow: hidden;
+  max-height: none;
+}
+
+.layerpanel.panel-collapsed .panel-container,
+.layerpanel.panel-collapsed .ol-layerswitcher,
+.layerpanel.panel-collapsed > :not(.layerpanel-header) {
+  display: none !important;
+}
+
+/* Header row with toggle arrow */
+.layerpanel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  margin: 0;
+  padding: 8px 4px;
+  letter-spacing: 0.75px;
+}
+
+.layerpanel:not(.panel-collapsed) .layerpanel-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: 6px;
+}
+
+.layerpanel-header:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+.layerpanel-arrow {
+  display: inline-block;
+  font-size: 1em;
+  transition: transform 0.25s ease;
+}
+
+.layerpanel.panel-collapsed .layerpanel-arrow {
+  transform: rotate(-90deg);
 }
 
 .layerpanel h3 {
@@ -245,6 +342,55 @@ body {
 }
 .layerup {
   display: none !important;
+}
+
+/* ===== LAYER GROUP COLLAPSE / EXPAND ===== */
+
+/* Make the group header row clickable */
+.ol-layerswitcher .panel li.ol-layer-group > .li-content {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Hide the original ol-ext +/- buttons (we use our own CSS arrows) */
+.ol-layerswitcher .panel li.ol-layer-group > .ol-layerswitcher-buttons > .expend-layers,
+.ol-layerswitcher .panel li.ol-layer-group > .ol-layerswitcher-buttons > .collapse-layers {
+  display: none;
+}
+
+/* Collapse arrow indicator on group labels */
+.ol-layerswitcher .panel li.ol-layer-group > .li-content > label > span::before {
+  content: '▾';
+  display: inline-block;
+  width: 0.9em;
+  font-size: 0.85em;
+  transition: transform 0.25s ease;
+  transform-origin: center center;
+}
+
+/* Rotated arrow when collapsed */
+.ol-layerswitcher .panel li.ol-layer-group.layer-collapsed > .li-content > label > span::before {
+  transform: rotate(-90deg);
+}
+
+/* Smooth collapse animation on child <ul> */
+.ol-layerswitcher .panel li.ol-layer-group > ul {
+  overflow: hidden;
+  max-height: 800px;
+  transition: max-height 0.35s ease-in-out, opacity 0.25s ease;
+  opacity: 1;
+}
+
+.ol-layerswitcher .panel li.ol-layer-group.layer-collapsed > ul {
+  max-height: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Subtle highlight on group header hover */
+.ol-layerswitcher .panel li.ol-layer-group > .li-content:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
 }
 
 .legend {
@@ -425,12 +571,11 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .container {
-    grid-template-columns: 60px 1fr;
+  .toolbar-row {
+    padding-left: 15px !important;
   }
   .toolbar-child {
-    flex-wrap: wrap;
-    width: 100%;
+    flex-wrap: nowrap;
   }
   .layerpanel {
     width: 200px;

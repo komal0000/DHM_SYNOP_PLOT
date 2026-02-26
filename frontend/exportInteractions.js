@@ -27,17 +27,43 @@ function exportMap(map, format, filename, extent) {
 
   window.devicePixelRatio = originalPixelRatio * scaleFactor;
   map.once('rendercomplete', () => {
-    const canvas = map.getViewport().querySelector('canvas');
-    if (!canvas) {
+    // Composite ALL canvases from the viewport (base tiles + vector layers like isobars)
+    const mapCanvas = document.createElement('canvas');
+    const layerCanvases = map.getViewport().querySelectorAll('.ol-layer canvas');
+
+    // Use the actual rendered canvas dimensions (already at high DPI from devicePixelRatio)
+    const firstCanvas = layerCanvases[0];
+    if (!firstCanvas) {
       showWarning('Failed to export map.', true);
       hideSpinner();
       window.devicePixelRatio = originalPixelRatio;
       return;
     }
+    mapCanvas.width = firstCanvas.width;
+    mapCanvas.height = firstCanvas.height;
+    const mapCtx = mapCanvas.getContext('2d');
 
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-    let exportCanvas = canvas;
+    layerCanvases.forEach((canvas) => {
+      if (canvas.width > 0 && canvas.height > 0) {
+        const opacity = canvas.parentNode.style.opacity || canvas.style.opacity;
+        mapCtx.globalAlpha = opacity === '' ? 1 : Number(opacity);
+        const transform = canvas.style.transform;
+        const matrix = transform.match(/^matrix\(([^\(]*)\)$/);
+        if (matrix) {
+          const values = matrix[1].split(',').map(Number);
+          CanvasRenderingContext2D.prototype.setTransform.apply(mapCtx, values);
+        } else {
+          mapCtx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+        mapCtx.drawImage(canvas, 0, 0);
+      }
+    });
+    mapCtx.globalAlpha = 1;
+    mapCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+    const canvasWidth = mapCanvas.width;
+    const canvasHeight = mapCanvas.height;
+    let exportCanvas = mapCanvas;
 
     if (extent) {
       const view = map.getView();
@@ -64,7 +90,7 @@ function exportMap(map, format, filename, extent) {
 
       const ctx = exportCanvas.getContext('2d');
       ctx.drawImage(
-        canvas,
+        mapCanvas,
         crop.x, crop.y, crop.width, crop.height,
         0, 0, exportCanvas.width, exportCanvas.height
       );
@@ -74,7 +100,7 @@ function exportMap(map, format, filename, extent) {
       exportCanvas.height = canvasHeight;
 
       const ctx = exportCanvas.getContext('2d');
-      ctx.drawImage(canvas, 0, 0);
+      ctx.drawImage(mapCanvas, 0, 0);
     }
 
     // Load logo
@@ -99,7 +125,7 @@ function exportMap(map, format, filename, extent) {
       const headerLines = [
         'Department of Hydrology and Meteorology',
         'Meteorological Forecasting Division',
-        'TIA, Kathmandu, Nepal'
+        'Babarmahal, Kathmandu, Nepal'
       ];
 
       const padding = 20 * scaleFactor;
@@ -254,21 +280,46 @@ function copyMapToClipboard(map, extent) {
 
   window.devicePixelRatio = originalPixelRatio * scaleFactor;
   map.once('rendercomplete', () => {
-    const canvas = map.getViewport().querySelector('canvas');
-    if (!canvas) {
+    // Composite ALL canvases from the viewport (base tiles + vector layers like isobars)
+    const mapCanvas = document.createElement('canvas');
+    const layerCvs = map.getViewport().querySelectorAll('.ol-layer canvas');
+
+    const firstCvs = layerCvs[0];
+    if (!firstCvs) {
       showWarning('Failed to copy to clipboard.', true);
       hideSpinner();
       window.devicePixelRatio = originalPixelRatio;
       return;
     }
+    mapCanvas.width = firstCvs.width;
+    mapCanvas.height = firstCvs.height;
+    const mapCtx = mapCanvas.getContext('2d');
 
-    let exportCanvas = canvas;
+    layerCvs.forEach((cvs) => {
+      if (cvs.width > 0 && cvs.height > 0) {
+        const opacity = cvs.parentNode.style.opacity || cvs.style.opacity;
+        mapCtx.globalAlpha = opacity === '' ? 1 : Number(opacity);
+        const transform = cvs.style.transform;
+        const matrix = transform.match(/^matrix\(([^\(]*)\)$/);
+        if (matrix) {
+          const values = matrix[1].split(',').map(Number);
+          CanvasRenderingContext2D.prototype.setTransform.apply(mapCtx, values);
+        } else {
+          mapCtx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+        mapCtx.drawImage(cvs, 0, 0);
+      }
+    });
+    mapCtx.globalAlpha = 1;
+    mapCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+    let exportCanvas = mapCanvas;
     if (crop) {
       exportCanvas = document.createElement('canvas');
       exportCanvas.width = crop.width;
       exportCanvas.height = crop.height;
       const ctx = exportCanvas.getContext('2d');
-      ctx.drawImage(canvas, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+      ctx.drawImage(mapCanvas, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
     }
 
     exportCanvas.toBlob((blob) => {

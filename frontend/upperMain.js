@@ -21,7 +21,7 @@ import { synopObservation } from './uppeAirSynop.js';
 import { createPopup, setupToolbarInteractions } from './interactions.js';
 import { clearMeasureInteractions } from './measureInteractions.js';
 import { editSource, editLayer } from './interactionLayers.js';
-import { clearEditInteractions } from './editInteractions.js';
+import { clearEditInteractions, addIsobarModifyInteraction, removeIsobarModifyInteraction, registerEraserSources, clearEraserSources } from './editInteractions.js';
 import { showSpinner, hideSpinner, showWarning, hideWarning, fetchWithRetry, debounce, getWeatherIcon, getCountryFlag, getPressureTrendClass, getPressureTrendSymbol } from './utils.js';
 import Modify from 'ol/interaction/Modify.js';
 import Select from 'ol/interaction/Select.js';
@@ -53,10 +53,92 @@ const map = new Map({
 });
 
 // Add Layer Switcher Control
-map.addControl(new LayerSwitcher({
+const layerSwitcher = new LayerSwitcher({
   target: document.querySelector('.lyrSwitcher'),
   extent: true
-}));
+});
+map.addControl(layerSwitcher);
+
+// ===== Layer Panel Collapse/Expand Enhancement =====
+// Forces all layer groups to always render children in the DOM,
+// then uses CSS class "layer-collapsed" + max-height transition for smooth animation.
+// Clicking a group header (label text) toggles collapse. State persists across redraws.
+(function initLayerCollapseUI() {
+  // Track which groups are collapsed by their title
+  var collapsedGroups = new Set();
+
+  // Force all layer groups to render their children (openInLayerSwitcher = true)
+  function forceGroupsOpen(layerCollection) {
+    layerCollection.forEach(function (layer) {
+      if (layer.getLayers) {
+        layer.set('openInLayerSwitcher', true, true);
+        forceGroupsOpen(layer.getLayers());
+      }
+    });
+  }
+  forceGroupsOpen(map.getLayers());
+  layerSwitcher.drawPanel();
+
+  var panel = document.querySelector('.lyrSwitcher .panel');
+  if (!panel) return;
+
+  /**
+   * Wire up click-to-collapse on each layer-group <li>.
+   * Restores collapsed state from `collapsedGroups` set.
+   */
+  function enhanceGroups() {
+    panel.querySelectorAll('li.ol-layer-group').forEach(function (li) {
+      var header = li.querySelector(':scope > .li-content');
+      if (!header) return;
+
+      // Get the group title from the label text
+      var label = header.querySelector('label span');
+      var title = label ? label.textContent.trim() : '';
+
+      // Restore collapsed state
+      if (title && collapsedGroups.has(title)) {
+        li.classList.add('layer-collapsed');
+      }
+
+      // Skip if already wired
+      if (li.dataset.collapseInit) return;
+      li.dataset.collapseInit = '1';
+
+      // Click the group label SPAN text (where the ▾ arrow is) to toggle collapse
+      var labelSpan = header.querySelector('label span');
+      if (labelSpan) {
+        labelSpan.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          li.classList.toggle('layer-collapsed');
+          // Persist state
+          if (li.classList.contains('layer-collapsed')) {
+            collapsedGroups.add(title);
+          } else {
+            collapsedGroups.delete(title);
+          }
+        });
+      }
+    });
+  }
+
+  // Initial enhancement
+  enhanceGroups();
+
+  // Re-enhance whenever ol-ext redraws the panel (e.g. layer added/removed)
+  var isEnhancing = false;
+  var observer = new MutationObserver(function () {
+    if (isEnhancing) return;
+    isEnhancing = true;
+    forceGroupsOpen(map.getLayers());
+    requestAnimationFrame(function () {
+      enhanceGroups();
+      isEnhancing = false;
+    });
+  });
+  observer.observe(panel, { childList: true, subtree: true });
+})();
 
 // Setup Popup
 const popup = createPopup(map);
@@ -296,6 +378,8 @@ async function refreshLayers(observationTime, level = '850HPA') {
     try {
       // Remove any active edit interactions (draw/modify/eraser)
       clearEditInteractions(map);
+      removeIsobarModifyInteraction(map);
+      clearEraserSources();
       editSource.clear();
         // Keep layer visibility as-is so user can draw immediately
     } catch (err) {
@@ -389,6 +473,10 @@ async function refreshLayers(observationTime, level = '850HPA') {
         style: isobarStyleFunction
       });
       isobarLayers.getLayers().push(isobarLayer);
+
+      // Make isobars editable (drag to reshape) and erasable
+      addIsobarModifyInteraction(map, isobarSource);
+      registerEraserSources([isobarSource]);
     } else {
       showWarning('No isobars available for the selected time. Check data or time range.');
       console.warn('No isobar features found in response:', isobarData);
@@ -442,7 +530,7 @@ map.on('click', function (event) {
   map.forEachFeatureAtPixel(event.pixel, function (feature, layer) {
     if (popupShown) return false;
     console.log('Feature clicked:', feature.getProperties(), 'Layer:', layer?.get('title'));
-    if (layer?.get('title') === 'Weather Stations') {
+    if (feature.get('isStation')) {
       const props = feature.getProperties();
       const coordinates = props.coordinates;
 

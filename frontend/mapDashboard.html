@@ -8,132 +8,6 @@
   <title>DHM Weather Map</title>
 
   <style>
-    body {
-      margin: 0;
-      font-family: "Georgia", "Times New Roman", Times, serif;
-
-    }
-
-    .container {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-
-    #logo {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      width: 50px;
-      z-index: 1000;
-    }
-
-    .toolbar {
-      display: flex;
-      justify-content: space-between;
-      background: #f0f0f0;
-      padding: 10px;
-      border-bottom: 1px solid #ccc;
-      z-index: 1000;
-    }
-
-    .toolbar-child {
-      display: flex;
-      gap: 10px;
-    }
-
-    .toolbar-items {
-      display: flex;
-      gap: 5px;
-      background: #fff;
-      padding: 5px;
-      border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    }
-
-    .toolbar-items .item {
-      cursor: pointer;
-      padding: 5px;
-      border-radius: 3px;
-      transition: background 0.2s;
-    }
-
-    .toolbar-items .item:hover {
-      background: #e0e0e0;
-    }
-
-    .toolbar-items .item img {
-      width: 24px;
-      height: 24px;
-    }
-
-    .menubar {
-      position: relative;
-      top: 70px;
-      left: 10px;
-      background: #fff;
-      border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-      z-index: 1000;
-    }
-
-    .menu-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 6px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-
-    .btn {
-      border: none;
-      outline: none;
-      padding: 8px 14px;
-      background-color: #f1f1f1;
-      cursor: pointer;
-      font-size: 18px;
-    }
-
-    /* Style the active class, and buttons on mouse-over */
-    .menubar button.active,
-    .menubar button:hover {
-      background-color: #ff3636;
-      color: white;
-    }
-
-
-    .menu-item {
-      margin-top: 2px;
-      font-size: 20px;
-      font-weight: bold;
-      font-family: "Georgia", "Times New Roman", Times, serif;
-
-    }
-
-    .content {
-      flex: 1;
-      position: relative;
-    }
-
-    #map {
-      width: 100%;
-      height: 100%;
-    }
-
-    .layerpanel {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: white;
-      padding: 10px;
-      border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-      z-index: 1000;
-      min-width: 200px;
-    }
-
     .loading-spinner {
       position: absolute;
       top: 50%;
@@ -150,13 +24,8 @@
     }
 
     @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .warning-panel {
@@ -171,8 +40,8 @@
       max-width: 300px;
     }
 
-    /* Export Drawer Styles */
-    .export-drawer {
+    .export-drawer,
+    .pdf-drawer {
       position: fixed;
       top: 0;
       right: 0;
@@ -186,7 +55,8 @@
       flex-direction: column;
     }
 
-    .export-drawer-header {
+    .export-drawer-header,
+    .pdf-drawer-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -195,12 +65,14 @@
       border-bottom: 1px solid #ccc;
     }
 
-    .export-drawer-header h3 {
+    .export-drawer-header h3,
+    .pdf-drawer-header h3 {
       margin: 0;
       font-family: "Georgia", "Times New Roman", Times, serif;
     }
 
-    .export-drawer-header .btn {
+    .export-drawer-header .btn,
+    .pdf-drawer-header .btn {
       background: #ff3636;
       color: white;
       border: none;
@@ -210,13 +82,15 @@
       font-size: 16px;
     }
 
-    .export-drawer-content {
+    .export-drawer-content,
+    .pdf-drawer-content {
       flex: 1;
       display: flex;
       height: calc(100vh - 70px);
     }
 
-    .export-list {
+    .export-list,
+    .pdf-list {
       width: 100%;
       padding: 15px;
       border-right: 1px solid #ccc;
@@ -224,7 +98,11 @@
       background: #f9f9f9;
     }
 
-    .export-item {
+    .export-item,
+    .pdf-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       padding: 10px;
       margin: 5px 0;
       background: white;
@@ -235,7 +113,8 @@
       position: relative;
     }
 
-    .export-item:hover {
+    .export-item:hover,
+    .pdf-item:hover {
       background: #e0e0e0;
     }
 
@@ -244,7 +123,8 @@
       color: white;
     }
 
-    .export-item-name {
+    .export-item-name,
+    .pdf-item-name {
       font-weight: bold;
       font-size: 14px;
       margin-bottom: 5px;
@@ -262,22 +142,12 @@
       text-transform: uppercase;
     }
 
-    .export-item-format.pdf {
-      background: #ff4757;
-      color: white;
-    }
+    .export-item-format.pdf  { background: #ff4757; color: white; }
+    .export-item-format.png  { background: #2ed573; color: white; }
+    .export-item-format.jpeg { background: #ffa502; color: white; }
 
-    .export-item-format.png {
-      background: #2ed573;
-      color: white;
-    }
-
-    .export-item-format.jpeg {
-      background: #ffa502;
-      color: white;
-    }
-
-    .export-item-meta {
+    .export-item-meta,
+    .pdf-item-meta {
       font-size: 12px;
       color: #666;
     }
@@ -286,7 +156,43 @@
       color: #ccc;
     }
 
-    .export-preview {
+    .export-item-content {
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .export-item-view {
+      background: #4b6cb7;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .export-item-view:hover {
+      background: #3a5a9a;
+    }
+
+    .export-item-delete {
+      background: red;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .export-item-delete:hover {
+      background: #cc0000;
+    }
+
+    .export-preview,
+    .pdf-preview {
       flex: 1;
       display: flex;
       align-items: center;
@@ -294,25 +200,27 @@
       background: #f5f5f5;
     }
 
-    .export-preview-placeholder {
+    .export-preview-placeholder,
+    .pdf-preview-placeholder {
       text-align: center;
       color: #666;
       font-size: 18px;
     }
 
-    #export-preview-frame {
+    #export-preview-frame,
+    #pdf-preview-frame {
       width: 100%;
       height: 100%;
       border: none;
     }
 
-    .export-loading {
+    .export-loading,
+    .pdf-loading {
       text-align: center;
       padding: 20px;
       color: #666;
     }
 
-    /* Lightbox Styles - Add this to your existing <style> section */
     .export-lightbox {
       position: fixed;
       top: 0;
@@ -421,180 +329,69 @@
     .lightbox-download:hover {
       background: #3a5a9a;
     }
-
-    /* Additional styles for export item buttons */
-    .export-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .export-item-content {
-      flex: 1;
-      cursor: pointer;
-    }
-
-    .export-item-view {
-      background: #4b6cb7;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 3px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: background 0.2s;
-    }
-
-    .export-item-view:hover {
-      background: #3a5a9a;
-    }
-
-     .export-item-delete {
-      background: red;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 3px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: background 0.2s;
-    }
-
-    .export-item-delete:hover {
-      background: #cc0000;
-    }
-
-    /* Keep backward compatibility for PDF classes */
-    .pdf-drawer {
-      @extend .export-drawer;
-    }
-
-    .pdf-drawer-header {
-      @extend .export-drawer-header;
-    }
-
-    .pdf-drawer-content {
-      @extend .export-drawer-content;
-    }
-
-    .pdf-list {
-      @extend .export-list;
-    }
-
-    .pdf-item {
-      @extend .export-item;
-    }
-
-    .pdf-item-name {
-      @extend .export-item-name;
-    }
-
-    .pdf-item-meta {
-      @extend .export-item-meta;
-    }
-
-    .pdf-preview {
-      @extend .export-preview;
-    }
-
-    .pdf-preview-placeholder {
-      @extend .export-preview-placeholder;
-    }
-
-    #pdf-preview-frame {
-      @extend #export-preview-frame;
-    }
-
-    .pdf-loading {
-      @extend .export-loading;
-    }
   </style>
 </head>
 
 <body>
   <div class="container">
-    <!-- Logo -->
     <img id="logo" src="res/nepallogo.png" alt="DHM Logo">
-    <!-- Toolbar -->
     <div class="toolbar">
-      <div class="toolbar-child">
-        <!-- Import/Export -->
-        <!-- <div class="toolbar-items">
-          <div class="item import-map" title="Import GeoJSON"><img src="res/iocns/vector-28.svg" alt="Import"></div>
-          <div class="item export-map" title="Export Map"><img src="res/iocns/vector-29.svg" alt="Export"></div>
-        </div> -->
-        <!-- Pan Control -->
-        <div class="toolbar-items">
-          <div class="item pan-up" title="Pan Up"><img src="res/iocns/vector-24.svg" alt="Pan Up"></div>
-          <div class="item pan-down" title="Pan Down"><img src="res/iocns/vector-25.svg" alt="Pan Down"></div>
-          <div class="item pan-reset" title="Reset View"><img src="res/iocns/vector-26.svg" alt="Pan Reset"></div>
-        </div>
-        <!-- Measuring Tool -->
-        <div class="toolbar-items">
-          <div class="item measure-distance" title="Measure Distance"><img src="res/iocns/vector-31.svg"
-              alt="Measure Distance"></div>
-          <div class="item measure-area" title="Measure Area"><img src="res/iocns/vector-32.svg" alt="Measure Area">
+      <div class="toolbar-row">
+        <div class="toolbar-child">
+          <div class="toolbar-items">
+            <div class="item pan-up" title="Pan Up"><img src="res/iocns/vector-24.svg" alt="Pan Up"></div>
+            <div class="item pan-down" title="Pan Down"><img src="res/iocns/vector-25.svg" alt="Pan Down"></div>
+            <div class="item pan-reset" title="Reset View"><img src="res/iocns/vector-26.svg" alt="Pan Reset"></div>
           </div>
-          <div class="item measure-clear" title="Clear Measurements"><img src="res/iocns/vector-33.svg"
-              alt="Measure Clear"></div>
-          <div class="item measure-toggle" title="Toggle Measure Layer"><img src="res/iocns/vector-34.svg"
-              alt="Measure Toggle"></div>
-        </div>
-        <!-- Edit -->
-        <div class="toolbar-items">
-          <div class="item edit-point" title="Select"><img src="res/iocns/select-cursor-svgrepo-com.svg"
-              alt="Edit Point"></div>
-          <div class="item edit-line" title="Draw Line"><img src="res/iocns/vector-37.svg" alt="Edit Line"></div>
-          <div class="item edit-polygon" title="Draw Polygon"><img src="res/iocns/vector-38.svg" alt="Edit Polygon">
+          <div class="toolbar-items">
+            <div class="item measure-distance" title="Measure Distance"><img src="res/iocns/vector-31.svg" alt="Measure Distance"></div>
+            <div class="item measure-area" title="Measure Area"><img src="res/iocns/vector-32.svg" alt="Measure Area"></div>
+            <div class="item measure-clear" title="Clear Measurements"><img src="res/iocns/vector-33.svg" alt="Measure Clear"></div>
+            <div class="item measure-toggle" title="Toggle Measure Layer"><img src="res/iocns/vector-34.svg" alt="Measure Toggle"></div>
           </div>
-          <div class="item edit-delete" title="Delete "><img src="res/iocns/delete-1-svgrepo-com.svg" alt="Edit Delete">
+          <div class="toolbar-items">
+            <div class="item edit-point" title="Select"><img src="res/iocns/select-cursor-svgrepo-com.svg" alt="Edit Point"></div>
+            <div class="item edit-line" title="Draw Line"><img src="res/iocns/vector-37.svg" alt="Edit Line"></div>
+            <div class="item edit-polygon" title="Draw Polygon"><img src="res/iocns/vector-38.svg" alt="Edit Polygon"></div>
+            <div class="item edit-delete" title="Delete"><img src="res/iocns/delete-1-svgrepo-com.svg" alt="Edit Delete"></div>
+            <div class="item edit-eraser" title="Eraser"><img src="res/iocns/eraser.svg" alt="Eraser"></div>
+            <div class="item edit-undo" title="Undo Edit"><img src="res/iocns/undo-svgrepo-com.svg" alt="Edit Undo"></div>
+            <div class="item edit-redo" title="Redo Edit"><img src="res/iocns/redo-alt-solid-svgrepo-com.svg" alt="Edit Redo"></div>
           </div>
-          <div class="item edit-eraser" title="Eraser"><img src="res/iocns/eraser.svg" alt="Eraser"></div>
-          <div class="item edit-undo" title="Undo Edit"><img src="res/iocns/undo-svgrepo-com.svg" alt="Edit Undo"></div>
-          <div class="item edit-redo" title="Redo Edit"><img src="res/iocns/redo-alt-solid-svgrepo-com.svg"
-              alt="Edit Redo"></div>
+          <div class="toolbar-items">
+            <select id="observation-time" class="item">
+              <option value="">Select Observation Time</option>
+            </select>
+          </div>
         </div>
-        <!-- Observation Time Selector -->
-        <div class="toolbar-items">
-          <select id="observation-time" class="item">
-            <option value="">Select Observation Time</option>
-          </select>
+        <div class="toolbar-child">
+          <div class="toolbar-items">
+            <div class="item export-container" title="Export Container"><img src="res/iocns/vector-29.svg" alt="Export Container"></div>
+          </div>
         </div>
       </div>
-      <div class="toolbar-child">
-        <!-- Export Container Button -->
-        <div class="toolbar-items">
-          <div class="item export-container" title="Export Container"><img src="res/iocns/vector-29.svg"
-              alt="Export Container" style="transform: rotate(0deg);"></div>
+      <div class="toolbar-row">
+        <div class="menubar">
+          <button class="menu-item btn edit-high" title="Add High Pressure (H)" style="color: blue;">H</button>
+          <button class="menu-item btn edit-low" title="Add Low Pressure (L)" style="color: red;">L</button>
+          <button class="menu-item btn edit-depression" title="Add Depression (D)" style="color: rgb(212, 58, 192);">D</button>
+          <button class="menu-item btn edit-sign" title="Add Sign">O</button>
+          <button class="menu-item btn edit-textbox" title="Add Text Box">T</button>
+          <button class="menu-item btn export-pdf" title="Export as PDF">PDF</button>
+          <button class="menu-item btn export-jpeg" title="Export as JPEG">JPEG</button>
+          <button class="menu-item btn export-png" title="Export as PNG">PNG</button>
+          <button class="menu-item btn export-area" title="Export area">Area</button>
+          <button class="menu-item btn copy-clipboard" title="Copy to Clipboard">Copy to Clipboard</button>
         </div>
       </div>
     </div>
-    <!-- Menubar -->
-    <div class="menubar ">
-
-      <button class="menu-item  btn edit-high" title="Add High Pressure (H)" style="color: blue;">H</button>
-      <button class="menu-item  btn edit-low" title="Add Low Pressure (L)" style="color: red;">L</button>
-      <button class="menu-item  btn edit-depression" title="Add Depression (D)"
-        style="color: rgb(212, 58, 192);">D</button>
-      <button class="menu-item  btn edit-sign" title="Add Sign">O</button>
-      <button class="menu-item  btn edit-textbox" title="Add Text Box">T</button>
-
-      <button class="menu-item  btn export-pdf" title="Export as PDF">PDF</button>
-      <button class="menu-item  btn export-jpeg" title="Export as JPEG">JPEG</button>
-      <button class="menu-item  btn export-png" title="Export as PNG">PNG</button>
-      <button class="menu-item  btn export-area" title="Export area">Area</button>
-      <button class="copy-clipboard" title="Copy to Clipboard">Copy to Clipboard</button>
-      <!-- <select id="resolution-scale">
-        <option value="1">1x (~150 DPI)</option>
-        <option value="2" selected>2x (~300 DPI)</option>
-        <option value="4">4x (~600 DPI)</option>
-      </select> -->
-    </div>
-    <!-- Content -->
     <div class="content">
       <div id="map"></div>
-      <div class="layerpanel lyrSwitcher">
-        <h5>Layers</h5>
+      <div class="layerpanel lyrSwitcher" id="layerpanel">
+        <h5 class="layerpanel-header" id="layerpanel-toggle">
+          <span>Layers</span>
+          <span class="layerpanel-arrow">▾</span>
+        </h5>
       </div>
       <div class="loading-spinner" id="loading-spinner"></div>
       <div class="warning-panel" id="warning-panel" style="display: none;"></div>
@@ -607,7 +404,7 @@
           <span style="font-size:12px;">Ministry of Energy, Water Resources and Irrigation</span><br>
           <span style="font-size:14px;">Department of Hydrology and Meteorology</span><br>
           <span style="font-size:16px;"> Meteorological Forecasting Division</span><br>
-          <span style="font-size:10px;">TIA, Kathmandu, Nepal</span>
+          <span style="font-size:10px;">Babarmahal, Kathmandu, Nepal</span>
         </div> -->
         <div class="legend-content">
           <span id="legend-observation-time">Observation Time: N/A</span>
@@ -645,6 +442,11 @@
     function closeForm() {
       document.getElementById("myForm").style.display = "none";
     }
+
+    // Layer panel collapse/expand toggle
+    document.getElementById('layerpanel-toggle').addEventListener('click', function () {
+      document.getElementById('layerpanel').classList.toggle('panel-collapsed');
+    });
   </script>
   <script type="module" src="./main.js"></script>
 </body>
