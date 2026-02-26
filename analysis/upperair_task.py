@@ -151,7 +151,7 @@ def fetch_upper_air_data(self):
         params = {
             'lang': 'en',
             # Request only TTAA format soundings (parser expects TTAA)
-            'tipo': 'TTAA',
+            'tipo': 'ALL',
             'ord': 'DIR',
             'nil': 'SI',
             'fmt': 'txt',
