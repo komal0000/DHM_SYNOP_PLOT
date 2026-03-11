@@ -3,10 +3,11 @@ from django.views import View
 import requests
 import logging
 
-logger = logging.getLogger(_name_)
+logger = logging.getLogger(__name__)
+
 
 class GeoServerProxy(View):
-    GEOSERVER_BASE_URL = "http://10.20.0.166:8081/geoserver-proxy"
+    GEOSERVER_BASE_URL = "http://127.0.0.1:8081/geoserver"
     
     def get(self, request, wms_path):
         try:

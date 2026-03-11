@@ -20,7 +20,7 @@ export const nepal = new TileLayer({
   title: 'Nepal',
   visible: false,
   source: new TileWMS({
-    url: '/geoserver-proxy/NepalAdmin/wms',
+    url: config.geoserverUrl,
     params: { 'LAYERS': 'NepalAdmin:province', 'TILED': true },
     serverType: 'geoserver',
     crossOrigin: 'anonymous',
