@@ -68,7 +68,11 @@ class SynopReportViewSet(viewsets.ReadOnlyModelViewSet):
         """Filter by level, observation_time, and optimize queries."""
         level = self.request.query_params.get('level', 'SURFACE')
         observation_time = self.request.query_params.get('observation_time')
-        queryset = SynopReport.objects.filter(level=level).select_related('station')
+        station_q = (
+            Q(station__country__in=_FREE_COUNTRIES) |
+            Q(station__country__in=_CSV_RESTRICTED_COUNTRIES, station__station_id__in=_CSV_STATION_IDS)
+        )
+        queryset = SynopReport.objects.filter(level=level).filter(station_q).select_related('station')
         if observation_time:
             try:
                 logger.debug(f"Received observation_time: {observation_time}")
@@ -97,7 +101,11 @@ class UpperAirSynopReportViewSet(viewsets.ReadOnlyModelViewSet):
         """Filter by level, observation_time, and optimize queries."""
         level = self.request.query_params.get('level', '200HPA')
         observation_time = self.request.query_params.get('observation_time')
-        queryset = UpperAirSynopReport.objects.filter(level=level).select_related('station')
+        station_q = (
+            Q(station__country__in=_FREE_COUNTRIES) |
+            Q(station__country__in=_CSV_RESTRICTED_COUNTRIES, station__station_id__in=_CSV_STATION_IDS)
+        )
+        queryset = UpperAirSynopReport.objects.filter(level=level).filter(station_q).select_related('station')
         if observation_time:
             try:
                 logger.debug(f"Received observation_time: {observation_time}")
