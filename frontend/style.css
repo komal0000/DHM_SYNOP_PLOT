@@ -393,6 +393,53 @@ body {
   border-radius: 3px;
 }
 
+/* ===== BORDER MODE TOGGLE (Country Only / Country + Provinces) ===== */
+.bm-container {
+  padding: 6px 8px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  margin-bottom: 2px;
+}
+
+.bm-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 5px;
+}
+
+.bm-btn-group {
+  display: flex;
+  gap: 4px;
+}
+
+.bm-btn {
+  flex: 1;
+  padding: 4px 0;
+  font-size: 0.78rem;
+  font-family: inherit;
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.bm-btn:hover {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+}
+
+.bm-btn--active {
+  background: #4b6cb7;
+  border-color: #4b6cb7;
+  color: #fff;
+  font-weight: 600;
+}
+
 .legend {
   position: absolute;
   bottom: 10px;

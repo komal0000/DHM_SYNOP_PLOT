@@ -14,7 +14,8 @@ import Text from 'ol/style/Text.js';
 import { config, extentLatLon, apiUrl } from './config.js';
 import {
   baseLayers, grid, stationLayers, temperatureLayers,
-  isobarLayers, isothermLayers, pressureCenterLayers, gridLayers, measureLayers
+  isobarLayers, isothermLayers, pressureCenterLayers, gridLayers, measureLayers,
+  COUNTRY_WMS
 } from './layers.js';
 import { addStationsToMap } from './stations.js';
 import { synopObservation } from './synop.js';
@@ -58,6 +59,61 @@ const layerSwitcher = new LayerSwitcher({
   extent: true
 });
 map.addControl(layerSwitcher);
+
+// ===== Border Mode Toggle UI =====
+// Injects a segmented button toggle (Country Border Only / Country + Provinces)
+// as a <div> directly inside .panel, before the <ul>. This position survives
+// ol-ext LayerSwitcher redraws because drawPanel() only replaces the <ul>.
+(function initBorderModeUI() {
+  var boundaryMode = 'adm0'; // default: country border only
+
+  function applyMode(mode) {
+    boundaryMode = mode;
+    COUNTRY_WMS.forEach(function(c) {
+      c.layer.getSource().updateParams({ 'LAYERS': c[mode] });
+    });
+    // Update button active state
+    document.querySelectorAll('.bm-btn').forEach(function(btn) {
+      btn.classList.toggle('bm-btn--active', btn.dataset.mode === mode);
+    });
+  }
+
+  function buildUI() {
+    var panel = document.querySelector('.lyrSwitcher .panel');
+    if (!panel || panel.querySelector('.bm-container')) return;
+
+    var container = document.createElement('div');
+    container.className = 'bm-container';
+    container.innerHTML =
+      '<div class="bm-label">Border Style</div>' +
+      '<div class="bm-btn-group">' +
+        '<button class="bm-btn bm-btn--active" data-mode="adm0">Country Only</button>' +
+        '<button class="bm-btn" data-mode="adm1">+ Provinces</button>' +
+      '</div>';
+
+    container.querySelectorAll('.bm-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        applyMode(this.dataset.mode);
+      });
+    });
+
+    // Insert before the <ul>, not inside it — survives LayerSwitcher redraws
+    var ul = panel.querySelector(':scope > ul');
+    panel.insertBefore(container, ul || panel.firstChild);
+  }
+
+  if (document.querySelector('.lyrSwitcher .panel')) {
+    buildUI();
+  } else {
+    var obs = new MutationObserver(function(_, observer) {
+      if (document.querySelector('.lyrSwitcher .panel')) {
+        observer.disconnect();
+        buildUI();
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+})();
 
 // ===== Layer Panel Collapse/Expand Enhancement =====
 // Forces all layer groups to always render children in the DOM,
