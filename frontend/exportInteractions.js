@@ -78,14 +78,27 @@ function exportMap(map, format, filename, extent) {
       crop = {
         x: x1,
         y: y1,
-        width: (x2 - x1),
-        height: (y2 - y1)
+        width: Math.round(x2 - x1),
+        height: Math.round(y2 - y1)
       };
-      exportSize = [crop.width * scaleFactor, crop.height * scaleFactor];
+      // crop.width/height are already in physical canvas pixels (scaled by devicePixelRatio × scaleFactor).
+      // Do NOT multiply by scaleFactor again — that would double-scale and exceed canvas limits.
+      exportSize = [crop.width, crop.height];
 
       exportCanvas = document.createElement('canvas');
       exportCanvas.width = exportSize[0];
       exportCanvas.height = exportSize[1];
+
+      // Safety check: if the browser silently capped the canvas to 0 (too large),
+      // bail out with a clear message instead of sending an empty data URL to the API.
+      if (exportCanvas.width === 0 || exportCanvas.height === 0) {
+        showWarning('Selected area is too large. Please lower the resolution scale or select a smaller area.', true);
+        window.devicePixelRatio = originalPixelRatio;
+        map.setSize(originalSize);
+        map.renderSync();
+        hideSpinner();
+        return;
+      }
 
       const ctx = exportCanvas.getContext('2d');
       ctx.drawImage(
@@ -127,16 +140,21 @@ function exportMap(map, format, filename, extent) {
         'Babarmahal, Kathmandu, Nepal'
       ];
 
-      const padding = 20 * scaleFactor;
-      const margin = 10 * scaleFactor;
-      const logoMarginBottom = 16 * scaleFactor;
-      const lineHeight = 16 * scaleFactor;
-      const fontSize = 12 * scaleFactor;
+      // Scale overlay elements relative to canvas size so they never overwhelm
+      // a small area-crop export. Cap at the full-map scaleFactor-based sizes.
+      const canvasShortSide = Math.min(finalCanvas.width, finalCanvas.height);
+      const relScale = Math.min(scaleFactor, canvasShortSide / 400);
+
+      const padding = Math.round(20 * relScale);
+      const margin = Math.round(10 * relScale);
+      const logoMarginBottom = Math.round(16 * relScale);
+      const lineHeight = Math.round(16 * relScale);
+      const fontSize = Math.max(8, Math.round(12 * relScale));
       const fontFamily = 'Arial';
 
       // Draw logo (bottom-left)
-      const logoWidth = 75 * scaleFactor;
-      const logoHeight = 75 * scaleFactor;
+      const logoWidth = Math.round(50 * relScale);
+      const logoHeight = Math.round(50 * relScale);
       const logoX = padding;
       const logoY = finalCanvas.height - padding - logoHeight - (headerLines.length * lineHeight) - logoMarginBottom;
       ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
