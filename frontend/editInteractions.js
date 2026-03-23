@@ -50,16 +50,28 @@ export function addEditInteraction(map, type) {
   
   modifyInteraction = new Modify({
     source: editSource,
-    features: editSource.getFeaturesCollection(),
   });
   
   drawInteraction.on('drawstart', (evt) => {
     console.log('drawstart event fired for type:', type);
+    if (modifyInteraction) {
+      modifyInteraction.setActive(false);
+    }
   });
   
   drawInteraction.on('drawend', (evt) => {
     console.log('drawend event fired for type:', type);
+    if (modifyInteraction) {
+      modifyInteraction.setActive(true);
+    }
     saveHistory();
+  });
+
+  drawInteraction.on('drawabort', () => {
+    console.log('drawabort event fired for type:', type);
+    if (modifyInteraction) {
+      modifyInteraction.setActive(true);
+    }
   });
   
   modifyInteraction.on('modifyend', () => {
@@ -67,8 +79,8 @@ export function addEditInteraction(map, type) {
     saveHistory();
   });
   
-  map.addInteraction(drawInteraction);
   map.addInteraction(modifyInteraction);
+  map.addInteraction(drawInteraction);
   map.getTargetElement().style.cursor = 'crosshair';
   
   console.log('Draw and modify interactions added to map');

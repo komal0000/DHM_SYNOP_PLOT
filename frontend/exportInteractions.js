@@ -5,6 +5,21 @@ import { config, apiUrl } from './config.js';
 
 let dragBoxInteraction = null;
 
+function normalizeSelection(selection) {
+  if (!selection) {
+    return null;
+  }
+
+  if (Array.isArray(selection)) {
+    return { extent: selection, pixelBounds: null };
+  }
+
+  return {
+    extent: selection.extent || null,
+    pixelBounds: selection.pixelBounds || null,
+  };
+}
+
 function getResolutionScaleFactor() {
   const input = prompt('Select resolution scale: (e.g., 1x for standard (~150 DPI), 2x for high (~300 DPI), 4x for ultra-high (~600 DPI)): ', '2');
   const scaleFactor = parseInt(input, 10);
@@ -15,11 +30,13 @@ function getResolutionScaleFactor() {
   return 2; // Default to 2x
 }
 
-function exportMap(map, format, filename, extent) {
+function exportMap(map, format, filename, selection) {
   showSpinner();
   const scaleFactor = getResolutionScaleFactor();
   const originalSize = map.getSize();
   const originalPixelRatio = window.devicePixelRatio;
+  const originalViewExtent = map.getView().calculateExtent(originalSize);
+  const normalizedSelection = normalizeSelection(selection);
 
   let exportSize = [originalSize[0] * scaleFactor, originalSize[1] * scaleFactor];
   let crop = null;
@@ -64,30 +81,45 @@ function exportMap(map, format, filename, extent) {
     const canvasHeight = mapCanvas.height;
     let exportCanvas = mapCanvas;
 
-    if (extent) {
-      const view = map.getView();
-      const mapExtent = view.calculateExtent(map.getSize());
-      const mapWidth = mapExtent[2] - mapExtent[0];
-      const mapHeight = mapExtent[3] - mapExtent[1];
+    if (normalizedSelection) {
+      if (normalizedSelection.pixelBounds) {
+        const { minX, minY, maxX, maxY } = normalizedSelection.pixelBounds;
+        crop = {
+          x: Math.max(0, Math.round(minX * scaleFactor)),
+          y: Math.max(0, Math.round(minY * scaleFactor)),
+          width: Math.min(canvasWidth, Math.round(maxX * scaleFactor)) - Math.max(0, Math.round(minX * scaleFactor)),
+          height: Math.min(canvasHeight, Math.round(maxY * scaleFactor)) - Math.max(0, Math.round(minY * scaleFactor))
+        };
+      } else if (normalizedSelection.extent) {
+        const extent = normalizedSelection.extent;
+        const mapWidth = originalViewExtent[2] - originalViewExtent[0];
+        const mapHeight = originalViewExtent[3] - originalViewExtent[1];
 
-      const x1 = ((extent[0] - mapExtent[0]) / mapWidth) * canvasWidth;
-      const y1 = ((mapExtent[3] - extent[3]) / mapHeight) * canvasHeight;
-      const x2 = ((extent[2] - mapExtent[0]) / mapWidth) * canvasWidth;
-      const y2 = ((mapExtent[3] - extent[1]) / mapHeight) * canvasHeight;
+        const x1 = ((extent[0] - originalViewExtent[0]) / mapWidth) * canvasWidth;
+        const y1 = ((originalViewExtent[3] - extent[3]) / mapHeight) * canvasHeight;
+        const x2 = ((extent[2] - originalViewExtent[0]) / mapWidth) * canvasWidth;
+        const y2 = ((originalViewExtent[3] - extent[1]) / mapHeight) * canvasHeight;
 
-      crop = {
-        x: x1,
-        y: y1,
-        width: Math.round(x2 - x1),
-        height: Math.round(y2 - y1)
-      };
-      // crop.width/height are already in physical canvas pixels (scaled by devicePixelRatio × scaleFactor).
-      // Do NOT multiply by scaleFactor again — that would double-scale and exceed canvas limits.
-      exportSize = [crop.width, crop.height];
+        crop = {
+          x: Math.max(0, Math.round(x1)),
+          y: Math.max(0, Math.round(y1)),
+          width: Math.min(canvasWidth, Math.round(x2)) - Math.max(0, Math.round(x1)),
+          height: Math.min(canvasHeight, Math.round(y2)) - Math.max(0, Math.round(y1))
+        };
+      }
+
+      if (!crop || crop.width <= 0 || crop.height <= 0) {
+        showWarning('Selected area is invalid. Please draw the area again.', true);
+        window.devicePixelRatio = originalPixelRatio;
+        map.setSize(originalSize);
+        map.renderSync();
+        hideSpinner();
+        return;
+      }
 
       exportCanvas = document.createElement('canvas');
-      exportCanvas.width = exportSize[0];
-      exportCanvas.height = exportSize[1];
+      exportCanvas.width = crop.width;
+      exportCanvas.height = crop.height;
 
       // Safety check: if the browser silently capped the canvas to 0 (too large),
       // bail out with a clear message instead of sending an empty data URL to the API.
@@ -133,39 +165,31 @@ function exportMap(map, format, filename, extent) {
       // Draw map image
       ctx.drawImage(exportCanvas, 0, 0);
 
-      // Header details
+      const isAreaExport = Boolean(normalizedSelection);
       const headerLines = [
         'Department of Hydrology and Meteorology',
         'Meteorological Forecasting Division',
         'Babarmahal, Kathmandu, Nepal'
       ];
-
-      // Scale overlay elements relative to canvas size so they never overwhelm
-      // a small area-crop export. Cap at the full-map scaleFactor-based sizes.
       const canvasShortSide = Math.min(finalCanvas.width, finalCanvas.height);
-      const relScale = Math.min(scaleFactor, canvasShortSide / 400);
-
-      const padding = Math.round(20 * relScale);
-      const margin = Math.round(10 * relScale);
-      const logoMarginBottom = Math.round(16 * relScale);
-      const lineHeight = Math.round(16 * relScale);
-      const fontSize = Math.max(8, Math.round(12 * relScale));
+      const padding = Math.max(12, Math.round(canvasShortSide * 0.028));
+      const fontSize = Math.max(9, Math.round(canvasShortSide * (isAreaExport ? 0.018 : 0.016)));
+      const metaFontSize = Math.max(8, Math.round(fontSize * 0.95));
+      const lineHeight = Math.round(fontSize * 1.2);
+      const logoSize = Math.max(26, Math.round(canvasShortSide * (isAreaExport ? 0.055 : 0.045)));
+      const logoMarginBottom = Math.max(8, Math.round(logoSize * 0.25));
       const fontFamily = 'Arial';
-
-      // Draw logo (bottom-left)
-      const logoWidth = Math.round(50 * relScale);
-      const logoHeight = Math.round(50 * relScale);
       const logoX = padding;
-      const logoY = finalCanvas.height - padding - logoHeight - (headerLines.length * lineHeight) - logoMarginBottom;
-      ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
+      const logoY = finalCanvas.height - padding - logoSize - (headerLines.length * lineHeight) - logoMarginBottom;
+      ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
 
-      // Draw header lines (above logo)
+      // Keep the full branding text but size it down for area exports.
       ctx.fillStyle = 'red';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'bottom';
       ctx.font = `${fontSize}px ${fontFamily}`;
       let currentY = finalCanvas.height - padding - lineHeight;
-      headerLines.slice().reverse().forEach(line => {
+      headerLines.slice().reverse().forEach((line) => {
         ctx.fillText(line, padding, currentY);
         currentY -= lineHeight;
       });
@@ -177,11 +201,14 @@ function exportMap(map, format, filename, extent) {
       }
       ctx.fillStyle = 'black';
       ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.font = `${metaFontSize}px ${fontFamily}`;
       ctx.fillText(observationTime, padding, finalCanvas.height - padding);
 
       // Draw "Prepared by" (bottom-right)
       ctx.fillStyle = 'black';
       ctx.textAlign = 'right';
+      ctx.font = `${metaFontSize}px ${fontFamily}`;
       ctx.fillText('Prepared by: ....................', finalCanvas.width - padding, finalCanvas.height - padding);
 
       // ---- EXPORT ----
@@ -208,7 +235,7 @@ function exportMap(map, format, filename, extent) {
           console.log('Starts with:', pdfData.substring(0, 50));
 
           // Save to database
-          saveExportToDatabaseDirect(pdfData, filename, 'PDF', extent)
+          saveExportToDatabaseDirect(pdfData, filename, 'PDF', normalizedSelection?.extent || null)
             .then(() => showWarning('PDF saved to database successfully.', false))
             .catch((error) => {
               console.error('Failed to save PDF to database:', error);
@@ -225,7 +252,7 @@ function exportMap(map, format, filename, extent) {
           const quality = format === 'jpeg' ? 0.9 : 1.0;
           const dataUrl = finalCanvas.toDataURL(mimeType, quality);
 
-          saveExportToDatabaseDirect(dataUrl, filename, format.toUpperCase(), extent)
+          saveExportToDatabaseDirect(dataUrl, filename, format.toUpperCase(), normalizedSelection?.extent || null)
             .then(() => showWarning(`${format.toUpperCase()} saved to database successfully.`, false))
             .catch((error) => {
               console.error(`Failed to save ${format} to database:`, error);
@@ -264,35 +291,51 @@ function exportMap(map, format, filename, extent) {
 }
 
 
-function copyMapToClipboard(map, extent) {
+function copyMapToClipboard(map, selection) {
   showSpinner();
   const scaleFactor = getResolutionScaleFactor();
   const originalSize = map.getSize();
   const originalPixelRatio = window.devicePixelRatio;
+  const originalViewExtent = map.getView().calculateExtent(originalSize);
+  const normalizedSelection = normalizeSelection(selection);
   let exportSize = [originalSize[0] * scaleFactor, originalSize[1] * scaleFactor];
   let crop = null;
 
-  if (extent) {
-    const view = map.getView();
-    const mapSize = map.getSize();
-    const mapExtent = view.calculateExtent(mapSize);
-    const mapWidth = mapExtent[2] - mapExtent[0];
-    const mapHeight = mapExtent[3] - mapExtent[1];
-    const canvasWidth = mapSize[0];
-    const canvasHeight = mapSize[1];
+  if (normalizedSelection) {
+    if (normalizedSelection.pixelBounds) {
+      const { minX, minY, maxX, maxY } = normalizedSelection.pixelBounds;
+      crop = {
+        x: Math.max(0, Math.round(minX * scaleFactor)),
+        y: Math.max(0, Math.round(minY * scaleFactor)),
+        width: Math.min(Math.round(originalSize[0] * scaleFactor), Math.round(maxX * scaleFactor)) - Math.max(0, Math.round(minX * scaleFactor)),
+        height: Math.min(Math.round(originalSize[1] * scaleFactor), Math.round(maxY * scaleFactor)) - Math.max(0, Math.round(minY * scaleFactor))
+      };
+    } else if (normalizedSelection.extent) {
+      const extent = normalizedSelection.extent;
+      const mapWidth = originalViewExtent[2] - originalViewExtent[0];
+      const mapHeight = originalViewExtent[3] - originalViewExtent[1];
+      const canvasWidth = originalSize[0];
+      const canvasHeight = originalSize[1];
 
-    const x1 = ((extent[0] - mapExtent[0]) / mapWidth) * canvasWidth;
-    const y1 = ((mapExtent[3] - extent[3]) / mapHeight) * canvasHeight;
-    const x2 = ((extent[2] - mapExtent[0]) / mapWidth) * canvasWidth;
-    const y2 = ((mapExtent[3] - extent[1]) / mapHeight) * canvasHeight;
+      const x1 = ((extent[0] - originalViewExtent[0]) / mapWidth) * canvasWidth;
+      const y1 = ((originalViewExtent[3] - extent[3]) / mapHeight) * canvasHeight;
+      const x2 = ((extent[2] - originalViewExtent[0]) / mapWidth) * canvasWidth;
+      const y2 = ((originalViewExtent[3] - extent[1]) / mapHeight) * canvasHeight;
 
-    crop = {
-      x: x1 * scaleFactor,
-      y: y1 * scaleFactor,
-      width: (x2 - x1) * scaleFactor,
-      height: (y2 - y1) * scaleFactor
-    };
-    exportSize = [crop.width, crop.height];
+      crop = {
+        x: Math.max(0, Math.round(x1 * scaleFactor)),
+        y: Math.max(0, Math.round(y1 * scaleFactor)),
+        width: Math.min(Math.round(canvasWidth * scaleFactor), Math.round(x2 * scaleFactor)) - Math.max(0, Math.round(x1 * scaleFactor)),
+        height: Math.min(Math.round(canvasHeight * scaleFactor), Math.round(y2 * scaleFactor)) - Math.max(0, Math.round(y1 * scaleFactor))
+      };
+    }
+
+    if (!crop || crop.width <= 0 || crop.height <= 0) {
+      showWarning('Selected area is invalid. Please draw the area again.', true);
+      hideSpinner();
+      return;
+    }
+
   }
 
   window.devicePixelRatio = originalPixelRatio * scaleFactor;
@@ -394,11 +437,23 @@ export function addDragBoxExportInteraction(map, callback) {
   dragBoxInteraction = new DragBox({});
 
   dragBoxInteraction.on('boxend', () => {
-    const extent = dragBoxInteraction.getGeometry().getExtent();
+    const geometry = dragBoxInteraction.getGeometry();
+    const extent = geometry.getExtent();
+    const topLeft = map.getPixelFromCoordinate([extent[0], extent[3]]);
+    const bottomRight = map.getPixelFromCoordinate([extent[2], extent[1]]);
+    const selection = {
+      extent,
+      pixelBounds: {
+        minX: Math.min(topLeft[0], bottomRight[0]),
+        minY: Math.min(topLeft[1], bottomRight[1]),
+        maxX: Math.max(topLeft[0], bottomRight[0]),
+        maxY: Math.max(topLeft[1], bottomRight[1]),
+      },
+    };
     map.removeInteraction(dragBoxInteraction);
     dragBoxInteraction = null;
     map.getTargetElement().style.cursor = 'default';
-    callback(extent);
+    callback(selection);
   });
 
   dragBoxInteraction.on('boxstart', () => {
